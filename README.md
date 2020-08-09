@@ -1,2 +1,13 @@
-# aurelien_bitwig_extensions
-Extensions for Bitwig
+# Aurélien's Bitwig extensions
+
+## Build
+```shell
+mvn install
+```
+
+
+## Controllers
+ * Novation Launch Control
+ * Novation Launchpad S
+ * Keith McMiller K-Board
+ 
