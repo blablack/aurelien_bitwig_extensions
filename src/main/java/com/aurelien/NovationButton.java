@@ -9,9 +9,13 @@ import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.HardwareBindable;
 import java.util.function.Supplier;
 
-
 public class NovationButton
 {
+    public enum NovationButtonType
+    {
+        NoteOn, CC
+    }
+
     final private String m_id;
     final private HardwareButton m_playButton;
 
@@ -20,30 +24,34 @@ public class NovationButton
     private int m_note;
     private int m_channel;
 
-    public NovationButton(HardwareSurface hardwareSurface, String ID)
+    public NovationButton(HardwareSurface hardwareSurface, String ID, NovationButtonType Type, MidiIn midiInPort, int MidiMessageChannelRoot, int Channel, int Note)
     {
         m_id = ID;
         m_playButton = hardwareSurface.createHardwareButton(m_id);
-    }
 
-    public void NoteOn(MidiIn midiInPort, int MidiMessageChannelRoot, int Channel, int Note, HardwareBindable hardwareBindable)
-    {
         m_note = Note;
         m_channel = Channel;
         m_midiMessageChannelRoot = MidiMessageChannelRoot;
 
-        m_playButton.pressedAction().setActionMatcher(midiInPort.createNoteOnActionMatcher(Channel, Note));
+        switch (Type)
+        {
+            case NoteOn:
+                m_playButton.pressedAction().setActionMatcher(midiInPort.createNoteOnActionMatcher(m_channel, m_note));
+                break;
+            case CC:
+                m_playButton.pressedAction().setActionMatcher(midiInPort.createCCActionMatcher(m_channel, m_note, 127));
+                break;
+        }
+    }
+
+    public void SetBinding(HardwareBindable hardwareBindable)
+    {
         m_playButton.pressedAction().setBinding(hardwareBindable);
     }
 
-    public void CCAction(MidiIn midiInPort, int MidiMessageChannelRoot, int Channel, int Note, HardwareBindable hardwareBindable)
+    public void ClearBinding()
     {
-        m_note = Note;
-        m_channel = Channel;
-        m_midiMessageChannelRoot = MidiMessageChannelRoot;
-
-        m_playButton.pressedAction().setActionMatcher(midiInPort.createCCActionMatcher(Channel, Note, 127));
-        m_playButton.pressedAction().setBinding(hardwareBindable);
+        m_playButton.pressedAction().clearBindings();
     }
 
     public void SetColor(HardwareSurface hardwareSurface, Supplier<? extends InternalHardwareLightState> valueSupplier, MidiOut midiOutPort)
