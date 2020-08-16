@@ -17,7 +17,7 @@ public class NovationButton
     }
 
     final private String m_id;
-    final private HardwareButton m_playButton;
+    final private HardwareButton m_hwButton;
 
     private int m_midiMessageChannelRoot;
 
@@ -27,7 +27,7 @@ public class NovationButton
     public NovationButton(HardwareSurface hardwareSurface, String ID, NovationButtonType Type, MidiIn midiInPort, int MidiMessageChannelRoot, int Channel, int Note)
     {
         m_id = ID;
-        m_playButton = hardwareSurface.createHardwareButton(m_id);
+        m_hwButton = hardwareSurface.createHardwareButton(m_id);
 
         m_note = Note;
         m_channel = Channel;
@@ -36,32 +36,42 @@ public class NovationButton
         switch (Type)
         {
             case NoteOn:
-                m_playButton.pressedAction().setActionMatcher(midiInPort.createNoteOnActionMatcher(m_channel, m_note));
+                m_hwButton.pressedAction().setActionMatcher(midiInPort.createNoteOnActionMatcher(m_channel, m_note));
                 break;
             case CC:
-                m_playButton.pressedAction().setActionMatcher(midiInPort.createCCActionMatcher(m_channel, m_note, 127));
+                m_hwButton.pressedAction().setActionMatcher(midiInPort.createCCActionMatcher(m_channel, m_note, 127));
                 break;
         }
     }
 
     public void SetBinding(HardwareBindable hardwareBindable)
     {
-        m_playButton.pressedAction().setBinding(hardwareBindable);
+        m_hwButton.pressedAction().setBinding(hardwareBindable);
+    }
+
+    public void AddBinding(HardwareBindable hardwareBindable)
+    {
+        m_hwButton.pressedAction().addBinding(hardwareBindable);
     }
 
     public void ClearBinding()
     {
-        m_playButton.pressedAction().clearBindings();
+        m_hwButton.pressedAction().clearBindings();
     }
 
     public void SetColor(HardwareSurface hardwareSurface, Supplier<? extends InternalHardwareLightState> valueSupplier, MidiOut midiOutPort)
     {
-        MultiStateHardwareLight m_playButtonLight = hardwareSurface.createMultiStateHardwareLight(m_id + "_LIGHT");
-        m_playButton.setBackgroundLight(m_playButtonLight);
+        MultiStateHardwareLight p_hwButtonLight = hardwareSurface.createMultiStateHardwareLight(m_id + "_LIGHT");
+        m_hwButton.setBackgroundLight(p_hwButtonLight);
 
-        m_playButtonLight.state().setValueSupplier(valueSupplier);
-        m_playButtonLight.state().onUpdateHardware(isOn -> {
+        p_hwButtonLight.state().setValueSupplier(valueSupplier);
+        p_hwButtonLight.state().onUpdateHardware(isOn -> {
             midiOutPort.sendMidi(m_midiMessageChannelRoot + m_channel, m_note, ((NovationColor) isOn).Code());
         });
+    }
+
+    public void SetColor(MidiOut midiOutPort, NovationColor color)
+    {
+        midiOutPort.sendMidi(m_midiMessageChannelRoot + m_channel, m_note, color.Code());
     }
 }

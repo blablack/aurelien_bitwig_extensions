@@ -12,9 +12,9 @@ final class NovationColor extends InternalHardwareLightState
     public static final NovationColor AMBER_LOW = new NovationColor(29);
     public static final NovationColor AMBER_FULL = new NovationColor(63);
     public static final NovationColor YELLOW_FULL = new NovationColor(62);
-    public static final NovationColor YELLOW_LOW = new NovationColor(0x2D);
+    public static final NovationColor YELLOW_LOW = new NovationColor(45);
     public static final NovationColor ORANGE = new NovationColor(39);
-    public static final NovationColor LIME = new NovationColor(0x3D);
+    public static final NovationColor LIME = new NovationColor(61);
     public static final NovationColor GREEN_LOW = new NovationColor(28);
     public static final NovationColor GREEN_FULL = new NovationColor(60);
 
