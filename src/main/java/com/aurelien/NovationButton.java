@@ -49,10 +49,12 @@ public class NovationButton
         m_hwButton.pressedAction().setBinding(hardwareBindable);
     }
 
+    /*
     public void AddBinding(HardwareBindable hardwareBindable)
     {
         m_hwButton.pressedAction().addBinding(hardwareBindable);
     }
+    */
 
     public void ClearBinding()
     {
@@ -70,8 +72,10 @@ public class NovationButton
         });
     }
 
+    /*
     public void SetColor(MidiOut midiOutPort, NovationColor color)
     {
         midiOutPort.sendMidi(m_midiMessageChannelRoot + m_channel, m_note, color.Code());
     }
+    */
 }

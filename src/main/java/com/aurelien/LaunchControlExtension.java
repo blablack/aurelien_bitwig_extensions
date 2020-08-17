@@ -2,7 +2,6 @@ package com.aurelien;
 
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.ControllerHost;
-import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.Application;
@@ -20,8 +19,8 @@ import com.bitwig.extension.controller.api.HardwareActionBindable;
 import com.bitwig.extension.controller.api.AbsoluteHardwareKnob;
 import com.bitwig.extension.controller.api.SettableEnumValue;
 import com.bitwig.extension.controller.api.RemoteControl;
-import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
+import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 
 public class LaunchControlExtension extends ControllerExtension
 {
@@ -63,6 +62,7 @@ public class LaunchControlExtension extends ControllerExtension
 
     private HardwareSurface hardwareSurface;
     private MidiOut midiOutPort;
+    private ControllerHost host;
 
     protected LaunchControlExtension(final LaunchControlExtensionDefinition definition, final ControllerHost host)
     {
@@ -77,8 +77,9 @@ public class LaunchControlExtension extends ControllerExtension
     @Override
     public void init()
     {
-        final ControllerHost host = this.getHost();
+        host = this.getHost();
         midiOutPort = host.getMidiOutPort(0);
+
         Reset();
 
         // Activate Flashing: 176+n, 0, 40
@@ -254,17 +255,29 @@ public class LaunchControlExtension extends ControllerExtension
     {
         final int p_channel = 10;
 
+        cursorTrack.hasPrevious().markInterested();
+        final NovationButton upDeviceButton = new NovationButton(hardwareSurface, "DEVICE_PREVIOUS_TRACK_BUTTON_UP", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_UP);
+        upDeviceButton.SetBinding(cursorTrack.selectPreviousAction());
+        upDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+
+        cursorTrack.hasNext().markInterested();
+        final NovationButton downDeviceButton = new NovationButton(hardwareSurface, "DEVICE_NEXT_TRACK_BUTTON_DOWN", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_DOWN);
+        downDeviceButton.SetBinding(cursorTrack.selectNextAction());
+        downDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasNext().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+
         DeviceBank p_deviceBank = cursorTrack.createDeviceBank(2);
+        PinnableCursorDevice p_cursor = cursorTrack.createCursorDevice("CURSOR_DEVICE", "Cursor Device", 0, CursorDeviceFollowMode.FOLLOW_SELECTION);
+        p_cursor.position().addValueObserver(value -> p_deviceBank.scrollIntoView(value), 0);
 
-        p_deviceBank.canScrollBackwards().markInterested();
+        p_cursor.hasPrevious().markInterested();
         final NovationButton leftButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_LEFT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_LEFT);
-        leftButton.SetBinding(p_deviceBank.scrollBackwardsAction());
-        leftButton.SetColor(hardwareSurface, () -> p_deviceBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        leftButton.SetBinding(p_cursor.selectPreviousAction());
+        leftButton.SetColor(hardwareSurface, () -> p_cursor.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
 
-        p_deviceBank.canScrollForwards().markInterested();
+        p_cursor.hasNext().markInterested();
         final NovationButton rightButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_RIGHT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_RIGHT);
-        rightButton.SetBinding(p_deviceBank.scrollForwardsAction());
-        rightButton.SetColor(hardwareSurface, () -> p_deviceBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        rightButton.SetBinding(p_cursor.selectNextAction());
+        rightButton.SetColor(hardwareSurface, () -> p_cursor.hasNext().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
 
         for (int i = 0; i < p_deviceBank.getSizeOfBank(); i++)
         {
@@ -280,16 +293,16 @@ public class LaunchControlExtension extends ControllerExtension
 
                 if (i == 0)
                 {
-                    if (j < 5)
+                    if (j < 4)
                         p_knobID = KNOB_1_UP + j;
                     else
-                        p_knobID = KNOB_1_DOWN + j;
+                        p_knobID = KNOB_1_DOWN + j - 4;
                 } else
                 {
-                    if (j < 5)
+                    if (j < 4)
                         p_knobID = KNOB_5_UP + j;
                     else
-                        p_knobID = KNOB_5_DOWN + j;
+                        p_knobID = KNOB_5_DOWN + j - 4;
                 }
 
                 final AbsoluteHardwareKnob p_vol_knob = hardwareSurface.createAbsoluteHardwareKnob("REMOTE_CTRL_KNOB_" + i + "_" + j);
@@ -301,49 +314,45 @@ public class LaunchControlExtension extends ControllerExtension
             if (i == 1)
                 p_buttonShift = 16;
 
+            p_oneDevice.exists().markInterested();
+
             p_oneDevice.isEnabled().markInterested();
             final NovationButton muteButton = new NovationButton(hardwareSurface, "DEVICE_MUTE_BUTTON_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_1 + p_buttonShift);
             muteButton.SetBinding(p_oneDevice.isEnabled().toggleAction());
-            muteButton.SetColor(hardwareSurface, () -> p_oneDevice.isEnabled().get() ? NovationColor.GREEN_FULL : NovationColor.RED_FULL, midiOutPort);
+            muteButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? p_oneDevice.isEnabled().get() ? NovationColor.GREEN_FULL : NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
 
             p_oneDevice.isRemoteControlsSectionVisible().markInterested();
             final NovationButton showRemote = new NovationButton(hardwareSurface, "DEVICE_SHOW_REMOTE_BUTTON_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_2 + p_buttonShift);
             showRemote.SetBinding(p_oneDevice.isRemoteControlsSectionVisible().toggleAction());
-            showRemote.SetColor(hardwareSurface, () -> p_oneDevice.isRemoteControlsSectionVisible().get() ? NovationColor.GREEN_FULL : NovationColor.RED_FULL, midiOutPort);
+            showRemote.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? p_oneDevice.isRemoteControlsSectionVisible().get() ? NovationColor.GREEN_FULL : NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
 
             remoteControlsBank.hasPrevious().markInterested();
             final NovationButton upButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_REMOTE_UP_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_3 + p_buttonShift);
             upButton.SetBinding(remoteControlsBank.selectPreviousAction());
-            upButton.SetColor(hardwareSurface, () -> remoteControlsBank.hasPrevious().get() ? NovationColor.RED_LOW : NovationColor.OFF, midiOutPort);
+            upButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasPrevious().get() ? NovationColor.RED_LOW : NovationColor.OFF : NovationColor.OFF, midiOutPort);
 
             remoteControlsBank.hasNext().markInterested();
             final NovationButton downButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_REMOTE_DOWN_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_4 + p_buttonShift);
             downButton.SetBinding(remoteControlsBank.selectNextAction());
-            downButton.SetColor(hardwareSurface, () -> remoteControlsBank.hasNext().get() ? NovationColor.RED_LOW : NovationColor.OFF, midiOutPort);
+            downButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasNext().get() ? NovationColor.RED_LOW : NovationColor.OFF : NovationColor.OFF, midiOutPort);
         }
     }
 
     private void onSysex(final String data)
     {
-        // this.getHost().println("onSysex: " + data);
+        // host.println("onSysex: " + data);
 
         final int p_page = Integer.parseInt(data.substring(15, 16), 16);
 
         if (p_page <= 10)
-        {
             m_settingTemplate.set(TEMPLATE_OPTIONS[p_page]);
-            getHost().showPopupNotification(TEMPLATE_OPTIONS[p_page]);
-
-        } else
-        {
-            getHost().showPopupNotification("Template not supported");
+        else
             ChangeCurrentTemplate(TEMPLATE_OPTIONS[DEFAULT_TEMPLATE]);
-        }
     }
 
     private void ChangeCurrentTemplate(final String Template)
     {
-        getHost().showPopupNotification(Template);
+        host.showPopupNotification(Template);
 
         int p_index = -1;
         for (final String p_tempTemplate : TEMPLATE_OPTIONS)
@@ -354,6 +363,8 @@ public class LaunchControlExtension extends ControllerExtension
         }
 
         midiOutPort.sendSysex("F0002029020A77" + String.format("%02X", p_index) + "F7");
+
+        hardwareSurface.invalidateHardwareOutputState();
     }
 
     @Override
@@ -365,7 +376,7 @@ public class LaunchControlExtension extends ControllerExtension
 
     private void Reset()
     {
-        // midiOutPort.sendSysex(SYSEX_RESET);
+        midiOutPort.sendSysex(SYSEX_RESET);
 
         final NovationColor p_off = NovationColor.OFF;
         for (int i = 0; i < 16; i++)
@@ -391,6 +402,6 @@ public class LaunchControlExtension extends ControllerExtension
     {
         Reset();
 
-        getHost().showPopupNotification("Launchpad Exited");
+        host.showPopupNotification("Launchpad Exited");
     }
 }
