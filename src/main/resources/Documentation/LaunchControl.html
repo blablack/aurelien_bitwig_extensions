@@ -1,0 +1,210 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Bitwig Studio controller documentation</title>
+    <style type="text/css">
+        BODY {
+            background-color: white;
+            color: black;
+            margin: 0;
+            padding: 0;
+            float: none;
+            font: 12pt "Source Sans Pro", sans-serif;
+        }
+
+        DIV.world {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        DIV.header {
+            background-color: #1c1c1c;
+            color: #f6f6f6;
+            height: 50px;
+            position: relative;
+            top: 0;
+            left: 0;
+            width: 100%;
+            float: none;
+        }
+
+        DIV.title {
+            position: absolute;
+            left: 220px;
+            width: 400px;
+            bottom: 12px;
+            font: 16pt "Source Sans Pro", sans-serif;
+        }
+
+        DIV.content {
+            padding: 20px;
+            margin-left: 200px;
+            color: black;
+            position: relative;
+            max-width: 100ch;
+        }
+
+        STRONG {
+            color: #00699d;
+        }
+
+        EM {
+            color: #009e61;
+        }
+
+        H1 {
+            margin: 20;
+            padding: 0;
+            position: relative;
+            font: 300 26pt 'Montserrat', sans-serif;
+        }
+
+        H2 {
+            color: #d66900;
+            margin-top: 40px;
+            margin-bottom: 10px;
+            font: bold 16pt "Source Sans Pro", sans-serif;
+        }
+
+        H3 {
+            color: #b95900;
+        }
+
+        H4 {
+            color: #9f4d00;
+        }
+
+        P {
+            color: black;
+        }
+
+        UL {
+            text-shadow: 0 0;
+            padding-left: 18px;
+        }
+
+        LI {
+            display: list-item;
+            padding: 4pt;
+        }
+
+        TABLE {
+            border-collapse: collapse
+        }
+
+        TD,
+        TH {
+            padding: 5pt;
+            border-bottom: 1px solid grey;
+        }
+
+        TR:hover {
+            background-color: #f7f7f7;
+        }
+
+        TR:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        TH {
+            background-color: #d66900;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="world">
+        <div class="header">
+            <div class="title">Controller documentation</div>
+        </div>
+        <div class="content">
+
+            <h1 id="launch-control">Launch Control</h1>
+            <p>
+                To switch between templates, press the Factory or User button (top right) and the bottom row of buttons
+                becomes green (Factory) or red (User). Select one of the templates between 1 and 8.
+            </p>
+
+            <h2 id="factory-templates">Factory Templates</h2>
+            <p>
+                Only the Factory template 1-3 are supported:
+            <ul>
+                <li>Transport Mode</li>
+                <li>Tracks Mode</li>
+                <li>Device Mode</li>
+            </ul>
+            </p>
+
+            <h2 id="user-templates">User Templates</h2>
+            <p>
+                The User templates emmits midi events that can be used to midi-learn the knobs and buttons in Bitwig
+            </p>
+
+            <h1 id="templates">Templates</h1>
+
+            <h2 id="factory-template-1">Factory template 1: Transport Mode</h2>
+            <p>
+                The <em>first button</em> toggles <strong>playing</strong>.
+                <br>The <em>second button</em> <strong>stops</strong> the transport if it is playing, and brings it back
+                to the beginning on the second press.
+                <br>The <em>third button</em> toggles the <strong>recording</strong> state.
+                <br>The <em>fourth button</em> toggles the <strong>metronome</strong>.
+            </p>
+
+            <h2 id="factory-template-2">Factory template 2: Tracks Mode</h2>
+            <p>
+                The <em>button 1</em> and <em>button 5</em> triggers the <strong>recording</strong> state for the first
+                and second tracks selected.
+                <br>The <em>button 2</em> and <em>button 6</em> triggers the <strong>solo</strong> stage for the first
+                and second tracks selected.
+                <br>The <em>button 3</em> and <em>button 7</em> <strong>mutes</strong> for the first and second tracks
+                selected.
+            </p>
+
+            <p>
+                The <em>top knob 1</em> and <em>top knob 5</em> controls the <strong>volume</strong> for the first and
+                second tracks selected.
+                <br>The <em>bottom knob 1</em> and <em>bottom knob 5</em> controls the <strong>pan</strong> for the
+                first and second tracks selected.
+            </p>
+
+            <p>
+                You can change the seleted tracks with the <em>up</em> and <em>down</em> buttons in
+                <strong>Arrange</strong> layout. The <em>left</em> and <em>right</em> buttons are used in the
+                <strong>Mix</strong> layout.
+            </p>
+
+            <h2 id="factory-template-3">Factory template 3: Device Mode</h2>
+            <p>
+                All the <em>knobs</em> are used to controls the <strong>Remote Controls</strong> of the devices. The
+                <em>knobs 1-4</em> for the first device, <em>knobs 5-8</em> for the second.
+            </p>
+
+            <p>
+                The <em>button 1</em> and <em>button 5</em> <strong>turns on/off</strong> for the first and
+                second devices selected.
+                <br>The <em>button 2</em> and <em>button 6</em> shows the <strong>Remote Controls</strong> for the first and
+                second devices selected.
+                <br>The <em>button 3-4</em> and <em>button 7-8</em> are used to navigate through the <strong>Remote Control pages</strong> for the first and
+                second devices selected.
+            </p>
+
+            <p>
+                You can change the seleted tracks with the <em>up</em> and <em>down</em> buttons.
+                <br>The <em>left</em> and <em>right</em> buttons are used to navigate through the devices.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

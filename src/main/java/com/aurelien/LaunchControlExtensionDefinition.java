@@ -95,6 +95,12 @@ public class LaunchControlExtensionDefinition extends ControllerExtensionDefinit
    }
 
    @Override
+   public String getHelpFilePath()
+   {
+      return "LaunchControl.html";
+   }
+
+   @Override
    public LaunchControlExtension createInstance(final ControllerHost host)
    {
       return new LaunchControlExtension(this, host);
