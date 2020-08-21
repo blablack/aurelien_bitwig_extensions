@@ -72,10 +72,6 @@ public class LaunchControlExtensionDefinition extends ControllerExtensionDefinit
    @Override
    public void listAutoDetectionMidiPortNames(final AutoDetectionMidiPortNamesList list, final PlatformType platformType)
    {
-      list.add(new String[]
-      {"Launch Control"}, new String[]
-      {"Launch Control"});
-
       if (platformType == PlatformType.WINDOWS)
       {
          list.add(new String[]
