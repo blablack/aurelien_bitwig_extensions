@@ -18,7 +18,7 @@ public class KBoardExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getName()
    {
-      return "KBoard";
+      return "K-Board";
    }
 
    @Override

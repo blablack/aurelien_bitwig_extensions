@@ -340,8 +340,6 @@ public class LaunchControlExtension extends ControllerExtension
 
     private void onSysex(final String data)
     {
-        // host.println("onSysex: " + data);
-
         final int p_page = Integer.parseInt(data.substring(15, 16), 16);
 
         if (p_page <= 10)
