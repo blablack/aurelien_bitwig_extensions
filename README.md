@@ -9,5 +9,4 @@ mvn install
 ## Controllers
  * Novation Launch Control
  * Novation Launchpad S
- * Keith McMiller K-Board
  
