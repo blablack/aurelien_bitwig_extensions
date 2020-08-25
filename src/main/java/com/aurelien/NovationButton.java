@@ -13,7 +13,7 @@ public class NovationButton
 {
     public enum NovationButtonType
     {
-        NoteOn, CC
+        NoteOn, CC, OFF
     }
 
     final private String m_id;
@@ -41,7 +41,14 @@ public class NovationButton
             case CC:
                 m_hwButton.pressedAction().setActionMatcher(midiInPort.createCCActionMatcher(m_channel, m_note, 127));
                 break;
+            case OFF:
+                break;
         }
+    }
+
+    public String GetID()
+    {
+        return m_id;
     }
 
     public void SetBinding(HardwareBindable hardwareBindable)
