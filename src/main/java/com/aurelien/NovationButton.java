@@ -71,4 +71,9 @@ public class NovationButton
             midiOutPort.sendMidi(m_midiMessageChannelRoot + m_channel, m_note, ((NovationColor) isOn).Code());
         });
     }
+
+    public void ClearColor()
+    {
+        m_hwButton.setBackgroundLight(null);
+    }
 }

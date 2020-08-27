@@ -6,27 +6,17 @@ import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.HardwareSurface;
-import com.bitwig.extension.controller.api.Transport;
-import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extension.controller.api.Parameter;
-import com.bitwig.extension.controller.api.PinnableCursorDevice;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.NoteInput;
 import com.bitwig.extension.controller.api.CursorTrack;
-import com.bitwig.extension.controller.api.DeviceBank;
-import com.bitwig.extension.controller.api.Device;
 import com.bitwig.extension.controller.api.DocumentState;
-import com.bitwig.extension.controller.api.HardwareActionBindable;
-import com.bitwig.extension.controller.api.AbsoluteHardwareKnob;
 import com.bitwig.extension.controller.api.SettableEnumValue;
 import com.bitwig.extension.controller.api.SettableRangedValue;
-import com.bitwig.extension.controller.api.RemoteControl;
-import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
-import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.PlayingNote;
+import com.bitwig.extension.controller.api.ClipLauncherSlot;
 
 import java.util.Arrays;
 
@@ -63,7 +53,7 @@ public class LaunchpadExtension extends ControllerExtension
    private ControllerHost host;
 
    final private String[] MODE =
-   {"Piano", "Diatonic", "Drums"};
+   {"Piano", "Diatonic", "Drums", "Clip"};
    final private int DEFAULT_MODE = 0;
    private SettableEnumValue m_settingMode;
 
@@ -80,6 +70,8 @@ public class LaunchpadExtension extends ControllerExtension
    private SettableRangedValue m_settingVelocity;
    private int activeNoteMap;
    private NoteMap[] NoteMaps;
+
+   private TrackBank trackBank;
 
    protected static final int NOTE_OFF = 0;
    protected static final int NOTE_ON = 1;
@@ -104,12 +96,32 @@ public class LaunchpadExtension extends ControllerExtension
       hardwareSurface = host.createHardwareSurface();
 
       noteInput = CreateNoteInput(midiInPort);
-      noteInput.setShouldConsumeEvents(false);
+      noteInput.setShouldConsumeEvents(true);
 
       noteCache = new int[128];
       Arrays.fill(this.noteCache, NOTE_OFF);
+      trackBank = host.createMainTrackBank(8, 0, 8);
+      for (int i = 0; i < 8; i++)
+      {
+         Track p_track = trackBank.getItemAt(i);
+         p_track.isStopped().markInterested();
+         p_track.isQueuedForStop().markInterested();
+         p_track.exists().markInterested();
+
+         for (int j = 0; j < 8; j++)
+         {
+            ClipLauncherSlot p_slot = p_track.clipLauncherSlotBank().getItemAt(j);
+            p_slot.exists().markInterested();
+            p_slot.isPlaybackQueued().markInterested();
+            p_slot.isRecordingQueued().markInterested();
+            p_slot.isStopQueued().markInterested();
+            p_slot.isPlaying().markInterested();
+            p_slot.isRecording().markInterested();
+            p_slot.hasContent().markInterested();
+         }
+      }
       CursorTrack mCursorTrack = host.createCursorTrack(0, 1);
-      // mCursorTrack.playingNotes().addValueObserver(notes -> mPlayingNotes = notes);
+      trackBank.followCursorTrack(mCursorTrack);
       mCursorTrack.playingNotes().markInterested();
       mCursorTrack.playingNotes().addValueObserver(this::PlayingNotes);
 
@@ -156,85 +168,142 @@ public class LaunchpadExtension extends ControllerExtension
 
    private void onMidi(final ShortMidiMessage msg)
    {
-      // host.println("MidiIn: " + msg);
       if (msg.getData2() == 127)
       {
          if (msg.getStatusByte() == CHANNEL_ROOT_BUTTONS_TOP)
          {
-            switch (msg.getData1())
+            if (msg.getData1() == BUTTON_MIXER)
             {
-               case BUTTON_MIXER:
-                  m_settingMode.set(MODE[NextInSetting(MODE, m_settingMode.get())]);
-                  break;
+               m_settingMode.set(MODE[NextInSetting(MODE, m_settingMode.get())]);
+            } else if (activeNoteMap != 3)
+            {
+               switch (msg.getData1())
+               {
+                  case BUTTON_UP:
+                     if (NoteMaps[activeNoteMap].canScrollUp())
+                     {
+                        NoteMaps[activeNoteMap].ScrollUp();
+                        updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+                     }
+                     break;
 
-               case BUTTON_UP:
-                  if (NoteMaps[activeNoteMap].canScrollUp())
-                  {
-                     NoteMaps[activeNoteMap].ScrollUp();
-                     updateNoteTranlationTable(NoteMaps[activeNoteMap]);
-                  }
-                  break;
+                  case BUTTON_DOWN:
+                     if (NoteMaps[activeNoteMap].canScrollDown())
+                     {
+                        NoteMaps[activeNoteMap].ScrollDown();
+                        updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+                     }
+                     break;
 
-               case BUTTON_DOWN:
-                  if (NoteMaps[activeNoteMap].canScrollDown())
-                  {
-                     NoteMaps[activeNoteMap].ScrollDown();
-                     updateNoteTranlationTable(NoteMaps[activeNoteMap]);
-                  }
-                  break;
+                  case BUTTON_LEFT:
+                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
+                     {
+                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+                        m_settingScale.set(p_tmpNoteMap.PreviousMode());
+                     }
+                     break;
 
-               case BUTTON_LEFT:
-                  if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                  {
-                     NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                     m_settingScale.set(p_tmpNoteMap.PreviousMode());
-                  }
-                  break;
+                  case BUTTON_RIGHT:
+                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
+                     {
+                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+                        m_settingScale.set(p_tmpNoteMap.NextMode());
+                     }
+                     break;
 
-               case BUTTON_RIGHT:
-                  if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                  {
-                     NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                     m_settingScale.set(p_tmpNoteMap.NextMode());
-                  }
-                  break;
+                  case BUTTON_SESSION:
+                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
+                     {
+                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+                        m_settingRoot.set(p_tmpNoteMap.NextInKey());
+                     }
+                     break;
+               }
+            } else
+            {
+               switch (msg.getData1())
+               {
+                  case BUTTON_UP:
+                     trackBank.scrollBackwards();
+                     break;
 
-               case BUTTON_SESSION:
-                  if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                  {
-                     NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                     m_settingRoot.set(p_tmpNoteMap.NextInKey());
-                  }
-                  break;
+                  case BUTTON_DOWN:
+                     trackBank.scrollForwards();
+                     break;
+
+                  case BUTTON_LEFT:
+                     trackBank.sceneBank().scrollBackwards();
+
+                     break;
+
+                  case BUTTON_RIGHT:
+                     trackBank.sceneBank().scrollForwards();
+                     break;
+               }
             }
          } else
          {
-            switch (msg.getData1())
+            if (activeNoteMap != 3)
             {
-               case BUTTON_ARM:
-                  VelocityChangeButton(15);
-                  break;
-               case BUTTON_SOLO:
-                  VelocityChangeButton(31);
-                  break;
-               case BUTTON_TRKON:
-                  VelocityChangeButton(47);
-                  break;
-               case BUTTON_STOP:
-                  VelocityChangeButton(63);
-                  break;
-               case BUTTON_SNDB:
-                  VelocityChangeButton(79);
-                  break;
-               case BUTTON_SNDA:
-                  VelocityChangeButton(95);
-                  break;
-               case BUTTON_PAN:
-                  VelocityChangeButton(111);
-                  break;
-               case BUTTON_VOL:
-                  VelocityChangeButton(127);
-                  break;
+               switch (msg.getData1())
+               {
+                  case BUTTON_ARM:
+                     VelocityChangeButton(15);
+                     break;
+                  case BUTTON_SOLO:
+                     VelocityChangeButton(31);
+                     break;
+                  case BUTTON_TRKON:
+                     VelocityChangeButton(47);
+                     break;
+                  case BUTTON_STOP:
+                     VelocityChangeButton(63);
+                     break;
+                  case BUTTON_SNDB:
+                     VelocityChangeButton(79);
+                     break;
+                  case BUTTON_SNDA:
+                     VelocityChangeButton(95);
+                     break;
+                  case BUTTON_PAN:
+                     VelocityChangeButton(111);
+                     break;
+                  case BUTTON_VOL:
+                     VelocityChangeButton(127);
+                     break;
+               }
+            } else
+            {
+               switch (msg.getData1())
+               {
+                  case BUTTON_ARM:
+                     trackBank.getItemAt(7).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_SOLO:
+                     trackBank.getItemAt(6).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_TRKON:
+                     trackBank.getItemAt(5).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_STOP:
+                     trackBank.getItemAt(4).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_SNDB:
+                     trackBank.getItemAt(3).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_SNDA:
+                     trackBank.getItemAt(2).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_PAN:
+                     trackBank.getItemAt(1).clipLauncherSlotBank().stop();
+                     break;
+                  case BUTTON_VOL:
+                     trackBank.getItemAt(0).clipLauncherSlotBank().stop();
+                     break;
+                  default:
+                     ClipLauncherSlot p_slot = trackBank.getItemAt((int) (msg.getData1() / 16)).clipLauncherSlotBank().getItemAt((int) (msg.getData1() % 16));
+                     p_slot.launch();
+               }
             }
          }
       }
@@ -242,6 +311,9 @@ public class LaunchpadExtension extends ControllerExtension
 
    private void PlayingNotes(PlayingNote[] PlayingNotes)
    {
+      if (activeNoteMap == 3)
+         return;
+
       synchronized (this.noteCache)
       {
          // Send the new notes
@@ -250,7 +322,6 @@ public class LaunchpadExtension extends ControllerExtension
             final int pitch = note.pitch();
             this.noteCache[pitch] = NOTE_ON_NEW;
             NoteMaps[activeNoteMap].TurnOnNote(pitch);
-            // this.notifyNoteObservers (pitch, note.velocity ());
          }
          // Send note offs
          for (int i = 0; i < this.noteCache.length; i++)
@@ -262,7 +333,6 @@ public class LaunchpadExtension extends ControllerExtension
             {
                this.noteCache[i] = NOTE_OFF;
                NoteMaps[activeNoteMap].TurnOffNote(i);
-               // this.notifyNoteObservers (i, 0);
             }
          }
       }
@@ -288,9 +358,19 @@ public class LaunchpadExtension extends ControllerExtension
       {
          final int p_tempVel = p_vel == 0 ? 1 : p_vel;
          final int p_tempVel_plus = p_vel + 8;
+         final int p_index = i / 16;
 
          final NovationButton p_velButton = new NovationButton(hardwareSurface, "VEL_BUTTON" + i, NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS, 0, i);
-         p_velButton.SetColor(hardwareSurface, () -> m_settingVelocity.get() * 127 >= p_tempVel_plus ? NovationColor.AMBER_FULL : m_settingVelocity.get() * 127 >= p_tempVel ? NovationColor.AMBER_LOW : NovationColor.OFF, midiOutPort);
+         p_velButton.SetColor(hardwareSurface, () -> {
+            if (activeNoteMap != 3)
+            {
+               return m_settingVelocity.get() * 127 >= p_tempVel_plus ? NovationColor.AMBER_FULL : m_settingVelocity.get() * 127 >= p_tempVel ? NovationColor.AMBER_LOW : NovationColor.OFF;
+            } else
+            {
+               Track p_track = trackBank.getItemAt(p_index);
+               return !p_track.exists().get() || p_track.isStopped().get() ? NovationColor.OFF : p_track.isQueuedForStop().get() ? NovationColor.RED_FLASHING : NovationColor.GREEN_FULL;
+            }
+         }, midiOutPort);
 
          p_vel += 16;
       }
@@ -308,6 +388,8 @@ public class LaunchpadExtension extends ControllerExtension
                return NovationColor.AMBER_FULL;
             case "Drums":
                return NovationColor.GREEN_FULL;
+            case "Clip":
+               return NovationColor.LIME;
             default:
                return NovationColor.OFF;
          }
@@ -316,20 +398,65 @@ public class LaunchpadExtension extends ControllerExtension
 
    private void SetTopButtons(MidiIn midiInPort)
    {
+      trackBank.canScrollBackwards().markInterested();
+      trackBank.canScrollForwards().markInterested();
+      trackBank.sceneBank().canScrollBackwards().markInterested();
+      trackBank.sceneBank().canScrollForwards().markInterested();
+
       final NovationButton p_leftButton = new NovationButton(hardwareSurface, "LEFT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_LEFT);
-      p_leftButton.SetColor(hardwareSurface, () -> NoteMaps[activeNoteMap].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.OFF, midiOutPort);
+      p_leftButton.SetColor(hardwareSurface, () -> {
+         if (activeNoteMap != 3)
+         {
+            return NoteMaps[activeNoteMap].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.OFF;
+         } else
+         {
+            return trackBank.sceneBank().canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, midiOutPort);
 
       final NovationButton p_rightButton = new NovationButton(hardwareSurface, "RIGHT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_RIGHT);
-      p_rightButton.SetColor(hardwareSurface, () -> NoteMaps[activeNoteMap].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.OFF, midiOutPort);
+      p_rightButton.SetColor(hardwareSurface, () -> {
+         if (activeNoteMap != 3)
+         {
+            return NoteMaps[activeNoteMap].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.OFF;
+         } else
+         {
+            return trackBank.sceneBank().canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, midiOutPort);
 
       final NovationButton p_upButton = new NovationButton(hardwareSurface, "UP_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_UP);
-      p_upButton.SetColor(hardwareSurface, () -> NoteMaps[activeNoteMap].canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+      p_upButton.SetColor(hardwareSurface, () -> {
+         if (activeNoteMap != 3)
+         {
+            return NoteMaps[activeNoteMap].canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
+         } else
+         {
+            return trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, midiOutPort);
 
       final NovationButton p_downButton = new NovationButton(hardwareSurface, "DOWN_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_DOWN);
-      p_downButton.SetColor(hardwareSurface, () -> NoteMaps[activeNoteMap].canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+      p_downButton.SetColor(hardwareSurface, () -> {
+         if (activeNoteMap != 3)
+         {
+            return NoteMaps[activeNoteMap].canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
+         } else
+         {
+            return trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, midiOutPort);
 
       final NovationButton p_sessionButton = new NovationButton(hardwareSurface, "SESSION_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_SESSION);
-      p_sessionButton.SetColor(hardwareSurface, () -> NoteMaps[activeNoteMap] instanceof NoteMapDiatonic ? NovationColor.LIME : NovationColor.OFF, midiOutPort);
+      p_sessionButton.SetColor(hardwareSurface, () -> {
+         if (activeNoteMap != 3)
+         {
+            return NoteMaps[activeNoteMap] instanceof NoteMapDiatonic ? NovationColor.LIME : NovationColor.OFF;
+         } else
+         {
+            return NovationColor.OFF;
+         }
+      }, midiOutPort);
    }
 
    private void ChangeSettingMode(final String Value)
@@ -345,10 +472,61 @@ public class LaunchpadExtension extends ControllerExtension
          case "Drums":
             activeNoteMap = 2;
             break;
+         case "Clip":
+            activeNoteMap = 3;
+            break;
       }
-      host.showPopupNotification(NoteMaps[activeNoteMap].toString());
-      updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+      if (activeNoteMap != 3)
+      {
+         host.showPopupNotification(NoteMaps[activeNoteMap].toString());
+         updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+      } else
+      {
+         Integer[] table = new Integer[128];
+         Arrays.fill(table, -1);
+         noteInput.setKeyTranslationTable(table);
+         ColorKeysForClip();
+         host.showPopupNotification("Clip");
+      }
       hardwareSurface.invalidateHardwareOutputState();
+   }
+
+   private void ColorKeysForClip()
+   {
+      if (activeNoteMap == 3)
+      {
+         for (int y = 0; y < 8; y++)
+         {
+            for (int x = 0; x < 8; x++)
+            {
+               int key = x * 8 + y;
+
+               int p_column = key & 0x7;
+               int p_row = key >> 3;
+
+               ClipLauncherSlot p_slot = trackBank.getItemAt(x).clipLauncherSlotBank().getItemAt(y);
+
+               if (p_slot.exists().get() && p_slot.hasContent().get())
+               {
+                  if (p_slot.isPlaybackQueued().get())
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_FLASHING.Code());
+                  else if (p_slot.isRecordingQueued().get())
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.RED_FLASHING.Code());
+                  else if (p_slot.isStopQueued().get())
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.AMBER_FLASHING.Code());
+                  else if (p_slot.isPlaying().get())
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_FULL.Code());
+                  else if (p_slot.isRecording().get())
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.RED_FULL.Code());
+                  else
+                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_LOW.Code());
+               } else
+               {
+                  midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.OFF.Code());
+               }
+            }
+         }
+      }
    }
 
    private void ChangeDiatonicMode(final String Value)
@@ -385,10 +563,10 @@ public class LaunchpadExtension extends ControllerExtension
       Integer[] table = new Integer[128];
       Arrays.fill(table, -1);
 
-      for (var i = 0; i < 128; i++)
+      for (int i = 0; i < 128; i++)
       {
-         var y = i >> 4;
-         var x = i & 0xF;
+         int y = i >> 4;
+         int x = i & 0xF;
 
          if (x < 8)
          {
@@ -411,6 +589,7 @@ public class LaunchpadExtension extends ControllerExtension
    @Override
    public void flush()
    {
+      ColorKeysForClip();
       if (this.hardwareSurface != null)
          this.hardwareSurface.updateHardware();
    }

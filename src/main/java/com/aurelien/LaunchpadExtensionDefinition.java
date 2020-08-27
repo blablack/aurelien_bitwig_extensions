@@ -18,7 +18,7 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getName()
    {
-      return "Launchpad";
+      return "Launchpad S";
    }
 
    @Override
@@ -48,7 +48,7 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getHardwareModel()
    {
-      return "Launchpad";
+      return "Launchpad S";
    }
 
    @Override

@@ -23,9 +23,9 @@ public class NoteMapPiano extends NoteMap
     @Override
     public void DrawKeys()
     {
-        for (var y = 0; y < 8; y++)
+        for (int y = 0; y < 8; y++)
         {
-            for (var x = 0; x < 8; x++)
+            for (int x = 0; x < 8; x++)
             {
                 int key = cellToKey(x, y);
                 NovationColor colour = (key != -1) ? (this.isKeyBlack(key) ? black : white) : off;
@@ -37,9 +37,9 @@ public class NoteMapPiano extends NoteMap
     @Override
     public void TurnOnNote(int Note)
     {
-        for (var y = 0; y < 8; y++)
+        for (int y = 0; y < 8; y++)
         {
-            for (var x = 0; x < 8; x++)
+            for (int x = 0; x < 8; x++)
             {
                 if (Note == this.cellToKey(x, y))
                 {
@@ -52,11 +52,11 @@ public class NoteMapPiano extends NoteMap
     @Override
     public void TurnOffNote(int Note)
     {
-        for (var y = 0; y < 8; y++)
+        for (int y = 0; y < 8; y++)
         {
-            for (var x = 0; x < 8; x++)
+            for (int x = 0; x < 8; x++)
             {
-                var key = this.cellToKey(x, y);
+                int key = this.cellToKey(x, y);
                 if (Note == key)
                 {
                     setCellLED(x, y, this.isKeyBlack(key) ? black : white);
@@ -126,7 +126,7 @@ public class NoteMapPiano extends NoteMap
 
     public Boolean isKeyBlack(int key)
     {
-        var k = key % 12;
+        int k = key % 12;
 
         switch (k)
         {

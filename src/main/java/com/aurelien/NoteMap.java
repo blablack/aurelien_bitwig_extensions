@@ -31,9 +31,9 @@ public class NoteMap
 
     public void DrawKeys()
     {
-        for (var y = 0; y < 8; y++)
+        for (int y = 0; y < 8; y++)
         {
-            for (var x = 0; x < 8; x++)
+            for (int x = 0; x < 8; x++)
             {
                 setCellLED(x, y, NovationColor.OFF);
             }
@@ -52,8 +52,8 @@ public class NoteMap
     {
         int key = row * 8 + column;
 
-        var p_column = key & 0x7;
-        var p_row = key >> 3;
+        int p_column = key & 0x7;
+        int p_row = key >> 3;
         m_midiOutPort.sendMidi(144, p_row * 16 + p_column, colour.Code());
     }
 

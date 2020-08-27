@@ -66,12 +66,6 @@ public class NoteMapDrums extends NoteMap
         setCellLED(x + 1, y + 1, colour);
     }
 
-    public void keyToCell(int Note, NovationColor colour)
-    {
-        int x = ((this.rootKey - Note) / 4 + 3) * 2;
-        int y = ((this.rootKey - Note) % 4) * -2;
-    }
-
     @Override
     public int cellToKey(int x, int y)
     {
