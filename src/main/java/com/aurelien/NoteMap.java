@@ -1,26 +1,29 @@
 package com.aurelien;
 
-import com.bitwig.extension.controller.api.ControllerHost;
+import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+
 import com.bitwig.extension.controller.api.MidiOut;
+import com.bitwig.extension.controller.api.SettableRangedValue;
 
 import java.util.Arrays;
 
 public class NoteMap
 {
-    protected int rootKey;
+    protected int m_rootKey;
 
-    Boolean noteOn[];
+    private Boolean m_noteOn[];
 
-    ControllerHost m_host;
-    MidiOut m_midiOutPort;
+    private MidiOut m_midiOutPort;
 
-    public NoteMap(ControllerHost host, MidiOut midiOutPort)
+    private SettableRangedValue m_settingVelocity;
+
+    public NoteMap(MidiOut midiOutPort, SettableRangedValue settingVelocity)
     {
-        m_host = host;
         m_midiOutPort = midiOutPort;
-        rootKey = 36;
-        noteOn = new Boolean[128];
-        Arrays.fill(noteOn, false);
+        m_settingVelocity = settingVelocity;
+        m_rootKey = 36;
+        m_noteOn = new Boolean[128];
+        Arrays.fill(m_noteOn, false);
     }
 
     public int cellToKey(int x, int y)
@@ -40,14 +43,6 @@ public class NoteMap
         }
     }
 
-    public void TurnOnNote(int Note)
-    {
-    }
-    
-    public void TurnOffNote(int Note)
-    {
-    }
-
     public void setCellLED(int column, int row, NovationColor colour)
     {
         int key = row * 8 + column;
@@ -55,6 +50,47 @@ public class NoteMap
         int p_column = key & 0x7;
         int p_row = key >> 3;
         m_midiOutPort.sendMidi(144, p_row * 16 + p_column, colour.Code());
+    }
+
+    public void onMidi(final ShortMidiMessage msg)
+    {
+        switch (msg.getData1())
+        {
+            case LaunchpadConstants.BUTTON_ARM:
+                VelocityChangeButton(15);
+                break;
+            case LaunchpadConstants.BUTTON_SOLO:
+                VelocityChangeButton(31);
+                break;
+            case LaunchpadConstants.BUTTON_TRKON:
+                VelocityChangeButton(47);
+                break;
+            case LaunchpadConstants.BUTTON_STOP:
+                VelocityChangeButton(63);
+                break;
+            case LaunchpadConstants.BUTTON_SNDB:
+                VelocityChangeButton(79);
+                break;
+            case LaunchpadConstants.BUTTON_SNDA:
+                VelocityChangeButton(95);
+                break;
+            case LaunchpadConstants.BUTTON_PAN:
+                VelocityChangeButton(111);
+                break;
+            case LaunchpadConstants.BUTTON_VOL:
+                VelocityChangeButton(127);
+                break;
+        }
+    }
+
+    private void VelocityChangeButton(int Value)
+    {
+        m_settingVelocity.setImmediately((double) Value / 127);
+    }
+
+    public NovationColor GetVelocityColor(int Vel_plus, int Vel)
+    {
+        return m_settingVelocity.get() * 127 >= Vel_plus ? NovationColor.AMBER_FULL : m_settingVelocity.get() * 127 >= Vel ? NovationColor.AMBER_LOW : NovationColor.OFF;
     }
 
     public Boolean canScrollUp()
@@ -92,4 +128,13 @@ public class NoteMap
     public void ScrollRight()
     {
     }
+
+    public void TurnOnNote(int Note)
+    {
+    }
+
+    public void TurnOffNote(int Note)
+    {
+    }
+
 }

@@ -297,7 +297,8 @@ public class LaunchControlExtension extends ControllerExtension
                         p_knobID = KNOB_1_UP + j;
                     else
                         p_knobID = KNOB_1_DOWN + j - 4;
-                } else
+                }
+                else
                 {
                     if (j < 4)
                         p_knobID = KNOB_5_UP + j;

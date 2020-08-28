@@ -1,7 +1,7 @@
 package com.aurelien;
 
-import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.MidiOut;
+import com.bitwig.extension.controller.api.SettableRangedValue;
 
 public class NoteMapDrums extends NoteMap
 {
@@ -9,9 +9,9 @@ public class NoteMapDrums extends NoteMap
     final private NovationColor odd;
     final private NovationColor on;
 
-    public NoteMapDrums(ControllerHost host, MidiOut midiOutPort)
+    public NoteMapDrums(MidiOut midiOutPort, SettableRangedValue settingVelocity)
     {
-        super(host, midiOutPort);
+        super(midiOutPort, settingVelocity);
 
         odd = NovationColor.AMBER_LOW;
         even = NovationColor.RED_LOW;
@@ -39,8 +39,8 @@ public class NoteMapDrums extends NoteMap
     @Override
     public void TurnOnNote(int Note)
     {
-        int x = ((this.rootKey - Note) % 4) * -2;
-        int y = ((this.rootKey - Note) / 4 + 3) * 2;
+        int x = ((this.m_rootKey - Note) % 4) * -2;
+        int y = ((this.m_rootKey - Note) / 4 + 3) * 2;
 
         setCellLED(x, y, on);
         setCellLED(x + 1, y, on);
@@ -51,8 +51,8 @@ public class NoteMapDrums extends NoteMap
     @Override
     public void TurnOffNote(int Note)
     {
-        int x = ((this.rootKey - Note) % 4) * -1;
-        int y = ((this.rootKey - Note) / 4 + 3) ;
+        int x = ((this.m_rootKey - Note) % 4) * -1;
+        int y = ((this.m_rootKey - Note) / 4 + 3);
 
         var cell_is_even = ((x + y) & 1) == 0;
         NovationColor colour = cell_is_even ? even : odd;
@@ -71,31 +71,31 @@ public class NoteMapDrums extends NoteMap
     {
         int lx = x >> 1;
         int ly = y >> 1;
-        return this.rootKey + (3 - ly) * 4 + lx;
+        return this.m_rootKey + (3 - ly) * 4 + lx;
     }
 
     @Override
     public Boolean canScrollUp()
     {
-        return this.rootKey < 100;
+        return this.m_rootKey < 100;
     }
 
     @Override
     public void ScrollUp()
     {
-        this.rootKey = Math.min(this.rootKey + 16, 100);
+        this.m_rootKey = Math.min(this.m_rootKey + 16, 100);
     }
 
     @Override
     public Boolean canScrollDown()
     {
-        return this.rootKey > 4;
+        return this.m_rootKey > 4;
     }
 
     @Override
     public void ScrollDown()
     {
-        this.rootKey = Math.max(this.rootKey - 16, 4);
+        this.m_rootKey = Math.max(this.m_rootKey - 16, 4);
     }
 
     @Override

@@ -9,75 +9,39 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.TrackBank;
-import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.NoteInput;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.DocumentState;
 import com.bitwig.extension.controller.api.SettableEnumValue;
 import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.PlayingNote;
-import com.bitwig.extension.controller.api.ClipLauncherSlot;
 
 import java.util.Arrays;
 
 public class LaunchpadExtension extends ControllerExtension
 {
-   final int BUTTON_UP = 104;
-   final int BUTTON_DOWN = 105;
-   final int BUTTON_LEFT = 106;
-   final int BUTTON_RIGHT = 107;
-
-   final int BUTTON_SESSION = 108;
-   final int BUTTON_USER1 = 109;
-   final int BUTTON_USER2 = 110;
-   final int BUTTON_MIXER = 111;
-
-   final int BUTTON_VOL = 8;
-   final int BUTTON_PAN = 24;
-   final int BUTTON_SNDA = 40;
-   final int BUTTON_SNDB = 56;
-
-   final int BUTTON_STOP = 72;
-   final int BUTTON_TRKON = 88;
-   final int BUTTON_SOLO = 104;
-   final int BUTTON_ARM = 120;
-
-   final int CHANNEL_ROOT_BUTTONS = 144;
-   final int CHANNEL_ROOT_BUTTONS_TOP = 176;
-
-   final int CHANNEL = 0;
-
-   private HardwareSurface hardwareSurface;
-   private MidiOut midiOutPort;
-   private NoteInput noteInput;
-   private ControllerHost host;
+   private ControllerHost m_host;
+   private HardwareSurface m_hardwareSurface;
+   private MidiOut m_midiOutPort;
+   private NoteInput m_noteInput;
 
    final private String[] MODE =
    {"Piano", "Diatonic", "Drums", "Clip"};
    final private int DEFAULT_MODE = 0;
    private SettableEnumValue m_settingMode;
+   private int m_activeMode;
 
-   final private String[] ROOT =
-   {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
    final int DEFAULT_ROOT = 0;
-   private SettableEnumValue m_settingRoot;
 
-   final private String[] SCALE =
-   {"Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"};
    final private int DEFAULT_SCALE = 0;
-   private SettableEnumValue m_settingScale;
 
-   private SettableRangedValue m_settingVelocity;
-   private int activeNoteMap;
-   private NoteMap[] NoteMaps;
+   private NoteMap[] m_noteMaps;
+   private Grid m_grid;
 
-   private TrackBank trackBank;
-
+   private int[] m_noteCache;
    protected static final int NOTE_OFF = 0;
    protected static final int NOTE_ON = 1;
    protected static final int NOTE_ON_NEW = 2;
-
-   private int[] noteCache;
 
    protected LaunchpadExtension(final LaunchpadExtensionDefinition definition, final ControllerHost host)
    {
@@ -87,223 +51,122 @@ public class LaunchpadExtension extends ControllerExtension
    @Override
    public void init()
    {
-      host = this.getHost();
+      m_host = this.getHost();
 
-      activeNoteMap = 0;
+      m_activeMode = 0;
 
-      final MidiIn midiInPort = host.getMidiInPort(0);
+      final MidiIn p_midiInPort = m_host.getMidiInPort(0);
+      m_midiOutPort = m_host.getMidiOutPort(0);
 
-      hardwareSurface = host.createHardwareSurface();
+      m_hardwareSurface = m_host.createHardwareSurface();
 
-      noteInput = CreateNoteInput(midiInPort);
-      noteInput.setShouldConsumeEvents(true);
+      m_noteInput = CreateNoteInput(p_midiInPort);
+      m_noteInput.setShouldConsumeEvents(true);
 
-      noteCache = new int[128];
-      Arrays.fill(this.noteCache, NOTE_OFF);
-      trackBank = host.createMainTrackBank(8, 0, 8);
-      for (int i = 0; i < 8; i++)
-      {
-         Track p_track = trackBank.getItemAt(i);
-         p_track.isStopped().markInterested();
-         p_track.isQueuedForStop().markInterested();
-         p_track.exists().markInterested();
+      m_noteCache = new int[128];
+      Arrays.fill(this.m_noteCache, NOTE_OFF);
 
-         for (int j = 0; j < 8; j++)
-         {
-            ClipLauncherSlot p_slot = p_track.clipLauncherSlotBank().getItemAt(j);
-            p_slot.exists().markInterested();
-            p_slot.isPlaybackQueued().markInterested();
-            p_slot.isRecordingQueued().markInterested();
-            p_slot.isStopQueued().markInterested();
-            p_slot.isPlaying().markInterested();
-            p_slot.isRecording().markInterested();
-            p_slot.hasContent().markInterested();
-         }
-      }
-      CursorTrack mCursorTrack = host.createCursorTrack(0, 1);
-      trackBank.followCursorTrack(mCursorTrack);
-      mCursorTrack.playingNotes().markInterested();
-      mCursorTrack.playingNotes().addValueObserver(this::PlayingNotes);
+      TrackBank p_trackBank = m_host.createMainTrackBank(8, 0, 8);
+      m_grid = new Grid(p_trackBank, m_midiOutPort);
 
-      midiOutPort = host.getMidiOutPort(0);
+      CursorTrack p_cursorTrack = m_host.createCursorTrack(0, 1);
+      p_trackBank.followCursorTrack(p_cursorTrack);
+      p_trackBank.canScrollBackwards().markInterested();
+      p_trackBank.canScrollForwards().markInterested();
+      p_trackBank.sceneBank().canScrollBackwards().markInterested();
+      p_trackBank.sceneBank().canScrollForwards().markInterested();
 
-      NoteMaps = new NoteMap[3];
-      NoteMaps[0] = new NoteMapPiano(host, midiOutPort);
-      NoteMaps[1] = new NoteMapDiatonic(host, midiOutPort);
-      NoteMaps[2] = new NoteMapDrums(host, midiOutPort);
+      p_cursorTrack.playingNotes().markInterested();
+      p_cursorTrack.playingNotes().addValueObserver(this::PlayingNotes);
 
-      Reset();
+      p_midiInPort.setMidiCallback((ShortMidiMessageReceivedCallback) msg -> onMidi(msg));
 
-      midiInPort.setMidiCallback((ShortMidiMessageReceivedCallback) msg -> onMidi(msg));
-
-      final DocumentState documentState = host.getDocumentState();
+      final DocumentState documentState = m_host.getDocumentState();
 
       m_settingMode = documentState.getEnumSetting("Mode", "General", MODE, MODE[DEFAULT_MODE]);
       m_settingMode.addValueObserver(value -> {
          ChangeSettingMode(value);
       });
 
-      m_settingVelocity = documentState.getNumberSetting("Velocity", "General", 0, 127, 1, "", 127);
-      m_settingVelocity.addValueObserver(128, value -> {
+      SettableRangedValue p_settingVelocity = documentState.getNumberSetting("Velocity", "General", 0, 127, 1, "", 127);
+      p_settingVelocity.addValueObserver(128, value -> {
          VelocityChanged(value);
       });
-      m_settingVelocity.subscribe();
+      p_settingVelocity.subscribe();
 
-      m_settingScale = documentState.getEnumSetting("Mode", "Diatonic", SCALE, SCALE[DEFAULT_SCALE]);
-      m_settingScale.addValueObserver(value -> {
+      SettableEnumValue  p_settingScale = documentState.getEnumSetting("Mode", "Diatonic", NoteMapDiatonic.GetAllModes(), NoteMapDiatonic.GetAllModes()[DEFAULT_SCALE]);
+      p_settingScale.addValueObserver(value -> {
          ChangeDiatonicMode(value);
       });
 
-      m_settingRoot = documentState.getEnumSetting("Root", "Diatonic", ROOT, ROOT[DEFAULT_ROOT]);
-      m_settingRoot.addValueObserver(value -> {
+      SettableEnumValue p_settingRoot = documentState.getEnumSetting("Root", "Diatonic", NoteMapDiatonic.GetAllRoot(), NoteMapDiatonic.GetAllRoot()[DEFAULT_ROOT]);
+      p_settingRoot.addValueObserver(value -> {
          ChangeDiatonicRoot(value);
       });
 
-      SetMixerButton(midiInPort);
-      SetVelocityButton(midiInPort);
-      SetTopButtons(midiInPort);
+      m_noteMaps = new NoteMap[3];
+      m_noteMaps[0] = new NoteMapPiano(m_midiOutPort, p_settingVelocity);
+      m_noteMaps[1] = new NoteMapDiatonic(m_midiOutPort, p_settingVelocity, p_settingScale, p_settingRoot);
+      m_noteMaps[2] = new NoteMapDrums(m_midiOutPort, p_settingVelocity);
 
-      host.showPopupNotification("Launchpad Initialized");
+      Reset();
+
+      SetMixerButton(p_midiInPort);
+      SetRightButtons(p_midiInPort);
+      SetTopButtons(p_midiInPort);
+
+      m_host.showPopupNotification("Launchpad Initialized");
    }
 
    private void onMidi(final ShortMidiMessage msg)
    {
       if (msg.getData2() == 127)
       {
-         if (msg.getStatusByte() == CHANNEL_ROOT_BUTTONS_TOP)
+         if (msg.getStatusByte() == LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP)
          {
-            if (msg.getData1() == BUTTON_MIXER)
+            if (msg.getData1() == LaunchpadConstants.BUTTON_MIXER)
             {
                m_settingMode.set(MODE[NextInSetting(MODE, m_settingMode.get())]);
-            } else if (activeNoteMap != 3)
+            }
+            else if (m_activeMode == 1)
+            {
+               ((NoteMapDiatonic) m_noteMaps[m_activeMode]).onMidiDiatonic(msg);
+            }
+            else if (m_activeMode != 3)
             {
                switch (msg.getData1())
                {
-                  case BUTTON_UP:
-                     if (NoteMaps[activeNoteMap].canScrollUp())
+                  case LaunchpadConstants.BUTTON_UP:
+                     if (m_noteMaps[m_activeMode].canScrollUp())
                      {
-                        NoteMaps[activeNoteMap].ScrollUp();
-                        updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+                        m_noteMaps[m_activeMode].ScrollUp();
+                        updateNoteTranslationTable(m_noteMaps[m_activeMode]);
                      }
                      break;
 
-                  case BUTTON_DOWN:
-                     if (NoteMaps[activeNoteMap].canScrollDown())
+                  case LaunchpadConstants.BUTTON_DOWN:
+                     if (m_noteMaps[m_activeMode].canScrollDown())
                      {
-                        NoteMaps[activeNoteMap].ScrollDown();
-                        updateNoteTranlationTable(NoteMaps[activeNoteMap]);
+                        m_noteMaps[m_activeMode].ScrollDown();
+                        updateNoteTranslationTable(m_noteMaps[m_activeMode]);
                      }
-                     break;
-
-                  case BUTTON_LEFT:
-                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                     {
-                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                        m_settingScale.set(p_tmpNoteMap.PreviousMode());
-                     }
-                     break;
-
-                  case BUTTON_RIGHT:
-                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                     {
-                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                        m_settingScale.set(p_tmpNoteMap.NextMode());
-                     }
-                     break;
-
-                  case BUTTON_SESSION:
-                     if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
-                     {
-                        NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
-                        m_settingRoot.set(p_tmpNoteMap.NextInKey());
-                     }
-                     break;
-               }
-            } else
-            {
-               switch (msg.getData1())
-               {
-                  case BUTTON_UP:
-                     trackBank.scrollBackwards();
-                     break;
-
-                  case BUTTON_DOWN:
-                     trackBank.scrollForwards();
-                     break;
-
-                  case BUTTON_LEFT:
-                     trackBank.sceneBank().scrollBackwards();
-
-                     break;
-
-                  case BUTTON_RIGHT:
-                     trackBank.sceneBank().scrollForwards();
                      break;
                }
             }
-         } else
+            else
+            {
+               m_grid.onMidi(msg);
+            }
+         }
+         else
          {
-            if (activeNoteMap != 3)
+            if (m_activeMode != 3)
             {
-               switch (msg.getData1())
-               {
-                  case BUTTON_ARM:
-                     VelocityChangeButton(15);
-                     break;
-                  case BUTTON_SOLO:
-                     VelocityChangeButton(31);
-                     break;
-                  case BUTTON_TRKON:
-                     VelocityChangeButton(47);
-                     break;
-                  case BUTTON_STOP:
-                     VelocityChangeButton(63);
-                     break;
-                  case BUTTON_SNDB:
-                     VelocityChangeButton(79);
-                     break;
-                  case BUTTON_SNDA:
-                     VelocityChangeButton(95);
-                     break;
-                  case BUTTON_PAN:
-                     VelocityChangeButton(111);
-                     break;
-                  case BUTTON_VOL:
-                     VelocityChangeButton(127);
-                     break;
-               }
-            } else
+               m_noteMaps[m_activeMode].onMidi(msg);
+            }
+            else
             {
-               switch (msg.getData1())
-               {
-                  case BUTTON_ARM:
-                     trackBank.getItemAt(7).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_SOLO:
-                     trackBank.getItemAt(6).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_TRKON:
-                     trackBank.getItemAt(5).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_STOP:
-                     trackBank.getItemAt(4).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_SNDB:
-                     trackBank.getItemAt(3).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_SNDA:
-                     trackBank.getItemAt(2).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_PAN:
-                     trackBank.getItemAt(1).clipLauncherSlotBank().stop();
-                     break;
-                  case BUTTON_VOL:
-                     trackBank.getItemAt(0).clipLauncherSlotBank().stop();
-                     break;
-                  default:
-                     ClipLauncherSlot p_slot = trackBank.getItemAt((int) (msg.getData1() / 16)).clipLauncherSlotBank().getItemAt((int) (msg.getData1() % 16));
-                     p_slot.launch();
-               }
+               m_grid.onMidi(msg);
             }
          }
       }
@@ -311,75 +174,46 @@ public class LaunchpadExtension extends ControllerExtension
 
    private void PlayingNotes(PlayingNote[] PlayingNotes)
    {
-      if (activeNoteMap == 3)
+      if (m_activeMode == 3)
          return;
 
-      synchronized (this.noteCache)
+      synchronized (this.m_noteCache)
       {
          // Send the new notes
          for (final PlayingNote note : PlayingNotes)
          {
             final int pitch = note.pitch();
-            this.noteCache[pitch] = NOTE_ON_NEW;
-            NoteMaps[activeNoteMap].TurnOnNote(pitch);
+            this.m_noteCache[pitch] = NOTE_ON_NEW;
+            m_noteMaps[m_activeMode].TurnOnNote(pitch);
          }
          // Send note offs
-         for (int i = 0; i < this.noteCache.length; i++)
+         for (int i = 0; i < this.m_noteCache.length; i++)
          {
-            if (this.noteCache[i] == NOTE_ON_NEW)
+            if (this.m_noteCache[i] == NOTE_ON_NEW)
             {
-               this.noteCache[i] = NOTE_ON;
-            } else if (this.noteCache[i] == NOTE_ON)
+               this.m_noteCache[i] = NOTE_ON;
+            }
+            else if (this.m_noteCache[i] == NOTE_ON)
             {
-               this.noteCache[i] = NOTE_OFF;
-               NoteMaps[activeNoteMap].TurnOffNote(i);
+               this.m_noteCache[i] = NOTE_OFF;
+               m_noteMaps[m_activeMode].TurnOffNote(i);
             }
          }
       }
-   }
-
-   private void VelocityChangeButton(int Value)
-   {
-      m_settingVelocity.setImmediately((double) Value / 127);
    }
 
    private void VelocityChanged(int Value)
    {
       Integer newVel[] = new Integer[128];
       Arrays.fill(newVel, Value);
-      noteInput.setVelocityTranslationTable(newVel);
-      hardwareSurface.invalidateHardwareOutputState();
-   }
-
-   private void SetVelocityButton(MidiIn midiInPort)
-   {
-      int p_vel = 0;
-      for (int i = BUTTON_ARM; i >= BUTTON_VOL; i -= 16)
-      {
-         final int p_tempVel = p_vel == 0 ? 1 : p_vel;
-         final int p_tempVel_plus = p_vel + 8;
-         final int p_index = i / 16;
-
-         final NovationButton p_velButton = new NovationButton(hardwareSurface, "VEL_BUTTON" + i, NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS, 0, i);
-         p_velButton.SetColor(hardwareSurface, () -> {
-            if (activeNoteMap != 3)
-            {
-               return m_settingVelocity.get() * 127 >= p_tempVel_plus ? NovationColor.AMBER_FULL : m_settingVelocity.get() * 127 >= p_tempVel ? NovationColor.AMBER_LOW : NovationColor.OFF;
-            } else
-            {
-               Track p_track = trackBank.getItemAt(p_index);
-               return !p_track.exists().get() || p_track.isStopped().get() ? NovationColor.OFF : p_track.isQueuedForStop().get() ? NovationColor.RED_FLASHING : NovationColor.GREEN_FULL;
-            }
-         }, midiOutPort);
-
-         p_vel += 16;
-      }
+      m_noteInput.setVelocityTranslationTable(newVel);
+      m_hardwareSurface.invalidateHardwareOutputState();
    }
 
    private void SetMixerButton(MidiIn midiInPort)
    {
-      final NovationButton mixerButton = new NovationButton(hardwareSurface, "MIXER_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_MIXER);
-      mixerButton.SetColor(hardwareSurface, () -> {
+      final NovationButton mixerButton = new NovationButton(m_hardwareSurface, "MIXER_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_MIXER);
+      mixerButton.SetColor(m_hardwareSurface, () -> {
          switch (m_settingMode.get())
          {
             case "Piano":
@@ -393,70 +227,95 @@ public class LaunchpadExtension extends ControllerExtension
             default:
                return NovationColor.OFF;
          }
-      }, midiOutPort);
+      }, m_midiOutPort);
+   }
+
+   private void SetRightButtons(MidiIn midiInPort)
+   {
+      int p_vel = 0;
+      for (int i = LaunchpadConstants.BUTTON_ARM; i >= LaunchpadConstants.BUTTON_VOL; i -= 16)
+      {
+         final int p_tempVel = p_vel == 0 ? 1 : p_vel;
+         final int p_tempVel_plus = p_vel + 8;
+         final int p_index = i / 16;
+
+         final NovationButton p_velButton = new NovationButton(m_hardwareSurface, "VEL_BUTTON" + i, NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS, 0, i);
+         p_velButton.SetColor(m_hardwareSurface, () -> {
+            if (m_activeMode != 3)
+            {
+               return m_noteMaps[m_activeMode].GetVelocityColor(p_tempVel_plus, p_tempVel);
+            }
+            else
+            {
+               return m_grid.GetTrackColor(p_index);
+            }
+         }, m_midiOutPort);
+
+         p_vel += 16;
+      }
    }
 
    private void SetTopButtons(MidiIn midiInPort)
    {
-      trackBank.canScrollBackwards().markInterested();
-      trackBank.canScrollForwards().markInterested();
-      trackBank.sceneBank().canScrollBackwards().markInterested();
-      trackBank.sceneBank().canScrollForwards().markInterested();
-
-      final NovationButton p_leftButton = new NovationButton(hardwareSurface, "LEFT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_LEFT);
-      p_leftButton.SetColor(hardwareSurface, () -> {
-         if (activeNoteMap != 3)
+      final NovationButton p_leftButton = new NovationButton(m_hardwareSurface, "LEFT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_LEFT);
+      p_leftButton.SetColor(m_hardwareSurface, () -> {
+         if (m_activeMode != 3)
          {
-            return NoteMaps[activeNoteMap].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.OFF;
-         } else
-         {
-            return trackBank.sceneBank().canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_noteMaps[m_activeMode].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.OFF;
          }
-      }, midiOutPort);
-
-      final NovationButton p_rightButton = new NovationButton(hardwareSurface, "RIGHT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_RIGHT);
-      p_rightButton.SetColor(hardwareSurface, () -> {
-         if (activeNoteMap != 3)
+         else
          {
-            return NoteMaps[activeNoteMap].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.OFF;
-         } else
-         {
-            return trackBank.sceneBank().canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollLeft() ? NovationColor.RED_FULL : NovationColor.OFF;
          }
-      }, midiOutPort);
+      }, m_midiOutPort);
 
-      final NovationButton p_upButton = new NovationButton(hardwareSurface, "UP_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_UP);
-      p_upButton.SetColor(hardwareSurface, () -> {
-         if (activeNoteMap != 3)
+      final NovationButton p_rightButton = new NovationButton(m_hardwareSurface, "RIGHT_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_RIGHT);
+      p_rightButton.SetColor(m_hardwareSurface, () -> {
+         if (m_activeMode != 3)
          {
-            return NoteMaps[activeNoteMap].canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
-         } else
-         {
-            return trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_noteMaps[m_activeMode].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.OFF;
          }
-      }, midiOutPort);
-
-      final NovationButton p_downButton = new NovationButton(hardwareSurface, "DOWN_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_DOWN);
-      p_downButton.SetColor(hardwareSurface, () -> {
-         if (activeNoteMap != 3)
+         else
          {
-            return NoteMaps[activeNoteMap].canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
-         } else
-         {
-            return trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollRight() ? NovationColor.RED_FULL : NovationColor.OFF;
          }
-      }, midiOutPort);
+      }, m_midiOutPort);
 
-      final NovationButton p_sessionButton = new NovationButton(hardwareSurface, "SESSION_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, CHANNEL_ROOT_BUTTONS_TOP, 0, BUTTON_SESSION);
-      p_sessionButton.SetColor(hardwareSurface, () -> {
-         if (activeNoteMap != 3)
+      final NovationButton p_upButton = new NovationButton(m_hardwareSurface, "UP_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_UP);
+      p_upButton.SetColor(m_hardwareSurface, () -> {
+         if (m_activeMode != 3)
          {
-            return NoteMaps[activeNoteMap] instanceof NoteMapDiatonic ? NovationColor.LIME : NovationColor.OFF;
-         } else
+            return m_noteMaps[m_activeMode].canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+         else
+         {
+            return m_grid.canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, m_midiOutPort);
+
+      final NovationButton p_downButton = new NovationButton(m_hardwareSurface, "DOWN_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_DOWN);
+      p_downButton.SetColor(m_hardwareSurface, () -> {
+         if (m_activeMode != 3)
+         {
+            return m_noteMaps[m_activeMode].canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+         else
+         {
+            return m_grid.canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
+         }
+      }, m_midiOutPort);
+
+      final NovationButton p_sessionButton = new NovationButton(m_hardwareSurface, "SESSION_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_SESSION);
+      p_sessionButton.SetColor(m_hardwareSurface, () -> {
+         if (m_activeMode == 1)
+         {
+            return NovationColor.LIME;
+         }
+         else
          {
             return NovationColor.OFF;
          }
-      }, midiOutPort);
+      }, m_midiOutPort);
    }
 
    private void ChangeSettingMode(final String Value)
@@ -464,101 +323,64 @@ public class LaunchpadExtension extends ControllerExtension
       switch (Value)
       {
          case "Piano":
-            activeNoteMap = 0;
+            m_activeMode = 0;
             break;
          case "Diatonic":
-            activeNoteMap = 1;
+            m_activeMode = 1;
             break;
          case "Drums":
-            activeNoteMap = 2;
+            m_activeMode = 2;
             break;
          case "Clip":
-            activeNoteMap = 3;
+            m_activeMode = 3;
             break;
       }
-      if (activeNoteMap != 3)
+      if (m_activeMode != 3)
       {
-         host.showPopupNotification(NoteMaps[activeNoteMap].toString());
-         updateNoteTranlationTable(NoteMaps[activeNoteMap]);
-      } else
+         m_host.showPopupNotification(m_noteMaps[m_activeMode].toString());
+         updateNoteTranslationTable(m_noteMaps[m_activeMode]);
+      }
+      else
       {
          Integer[] table = new Integer[128];
          Arrays.fill(table, -1);
-         noteInput.setKeyTranslationTable(table);
-         ColorKeysForClip();
-         host.showPopupNotification("Clip");
+         m_noteInput.setKeyTranslationTable(table);
+         m_grid.ColorKeysForClip();
+         m_host.showPopupNotification("Clip");
       }
-      hardwareSurface.invalidateHardwareOutputState();
-   }
-
-   private void ColorKeysForClip()
-   {
-      if (activeNoteMap == 3)
-      {
-         for (int y = 0; y < 8; y++)
-         {
-            for (int x = 0; x < 8; x++)
-            {
-               int key = x * 8 + y;
-
-               int p_column = key & 0x7;
-               int p_row = key >> 3;
-
-               ClipLauncherSlot p_slot = trackBank.getItemAt(x).clipLauncherSlotBank().getItemAt(y);
-
-               if (p_slot.exists().get() && p_slot.hasContent().get())
-               {
-                  if (p_slot.isPlaybackQueued().get())
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_FLASHING.Code());
-                  else if (p_slot.isRecordingQueued().get())
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.RED_FLASHING.Code());
-                  else if (p_slot.isStopQueued().get())
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.AMBER_FLASHING.Code());
-                  else if (p_slot.isPlaying().get())
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_FULL.Code());
-                  else if (p_slot.isRecording().get())
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.RED_FULL.Code());
-                  else
-                     midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.GREEN_LOW.Code());
-               } else
-               {
-                  midiOutPort.sendMidi(144, p_row * 16 + p_column, NovationColor.OFF.Code());
-               }
-            }
-         }
-      }
+      m_hardwareSurface.invalidateHardwareOutputState();
    }
 
    private void ChangeDiatonicMode(final String Value)
    {
-      if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
+      if (m_activeMode == 1)
       {
-         NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+         NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) m_noteMaps[m_activeMode];
          ChangeDiatonic(Value, p_tmpNoteMap.getDiatonicKey());
       }
    }
 
    private void ChangeDiatonicRoot(final String Value)
    {
-      if (NoteMaps[activeNoteMap] instanceof NoteMapDiatonic)
+      if (m_activeMode == 1)
       {
-         NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+         NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) m_noteMaps[m_activeMode];
          ChangeDiatonic(p_tmpNoteMap.getMode(), Value);
       }
    }
 
    private void ChangeDiatonic(final String Mode, final String Root)
    {
-      NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) NoteMaps[activeNoteMap];
+      NoteMapDiatonic p_tmpNoteMap = (NoteMapDiatonic) m_noteMaps[m_activeMode];
       p_tmpNoteMap.SetDiatonicKey(Root);
       p_tmpNoteMap.SetMode(Mode);
-      host.showPopupNotification(p_tmpNoteMap.toString());
-      updateNoteTranlationTable(p_tmpNoteMap);
-      hardwareSurface.invalidateHardwareOutputState();
-      NoteMaps[activeNoteMap] = p_tmpNoteMap;
+      m_host.showPopupNotification(p_tmpNoteMap.toString());
+      updateNoteTranslationTable(p_tmpNoteMap);
+      m_hardwareSurface.invalidateHardwareOutputState();
+      m_noteMaps[m_activeMode] = p_tmpNoteMap;
    }
 
-   public void updateNoteTranlationTable(NoteMap activeNoteMap)
+   public void updateNoteTranslationTable(NoteMap activeNoteMap)
    {
       Integer[] table = new Integer[128];
       Arrays.fill(table, -1);
@@ -574,7 +396,7 @@ public class LaunchpadExtension extends ControllerExtension
          }
       }
 
-      noteInput.setKeyTranslationTable(table);
+      m_noteInput.setKeyTranslationTable(table);
 
       activeNoteMap.DrawKeys();
    }
@@ -583,27 +405,28 @@ public class LaunchpadExtension extends ControllerExtension
    public void exit()
    {
       Reset();
-      host.showPopupNotification("Launchpad Exited");
+      m_host.showPopupNotification("Launchpad Exited");
    }
 
    @Override
    public void flush()
    {
-      ColorKeysForClip();
-      if (this.hardwareSurface != null)
-         this.hardwareSurface.updateHardware();
+      if (m_activeMode == 3)
+         m_grid.ColorKeysForClip();
+      if (this.m_hardwareSurface != null)
+         this.m_hardwareSurface.updateHardware();
    }
 
    private void Reset()
    {
       // Turn off all leds
-      midiOutPort.sendMidi(176, 0, 0);
+      m_midiOutPort.sendMidi(176, 0, 0);
 
       // set grid mapping mode
-      midiOutPort.sendMidi(176, 0, 1);
+      m_midiOutPort.sendMidi(176, 0, 1);
 
       // set flashing mode
-      midiOutPort.sendMidi(176, 0, 40);
+      m_midiOutPort.sendMidi(176, 0, 40);
    }
 
    private NoteInput CreateNoteInput(final MidiIn midiInPort)

@@ -1,7 +1,10 @@
 package com.aurelien;
 
-import com.bitwig.extension.controller.api.ControllerHost;
+import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+
 import com.bitwig.extension.controller.api.MidiOut;
+import com.bitwig.extension.controller.api.SettableRangedValue;
+import com.bitwig.extension.controller.api.SettableEnumValue;
 
 public class NoteMapDiatonic extends NoteMap
 {
@@ -16,10 +19,10 @@ public class NoteMapDiatonic extends NoteMap
             {0, 1, 3, 5, 6, 8, 10, 12} // Locrian
     };
 
-    final private String[] ModernModesNames =
+    final static private String[] ModernModesNames =
     {"Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"};
 
-    final private String[] DiatonicKeys =
+    final static private String[] DiatonicKeys =
     {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
     final private int defaultRoot = 36; // Default C
@@ -28,19 +31,24 @@ public class NoteMapDiatonic extends NoteMap
     protected int diatonicRootKey;
     private int diatonicOctave;
 
+    private SettableEnumValue m_settingRoot;
+    private SettableEnumValue m_settingScale;
+
     final private NovationColor white;
     final private NovationColor black;
     final private NovationColor off;
     final private NovationColor on;
 
-    public NoteMapDiatonic(ControllerHost host, MidiOut midiOutPort)
+    public NoteMapDiatonic(MidiOut midiOutPort, SettableRangedValue settingVelocity, SettableEnumValue settingScale, SettableEnumValue settingRoot)
     {
-        super(host, midiOutPort);
+        super(midiOutPort, settingVelocity);
+        m_settingScale = settingScale;
+        m_settingRoot = settingRoot;
         mode = 0;
         diatonicRootKey = 0;
         diatonicOctave = -2;
 
-        this.rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
 
         white = NovationColor.AMBER_LOW;
         black = NovationColor.RED_LOW;
@@ -98,8 +106,8 @@ public class NoteMapDiatonic extends NoteMap
     public int cellToKey(int x, int y)
     {
         var octave = 7 - y;
-        var key = this.rootKey + octave * 12 + ModernModes[this.mode][x];
-        
+        var key = this.m_rootKey + octave * 12 + ModernModes[this.mode][x];
+
         if (key >= 0 && key < 128)
             return key;
 
@@ -123,6 +131,16 @@ public class NoteMapDiatonic extends NoteMap
         return false;
     }
 
+    public static String[] GetAllModes()
+    {
+        return ModernModesNames;
+    }
+
+    public static String[] GetAllRoot()
+    {
+        return DiatonicKeys;
+    }
+
     public String getMode()
     {
         return ModernModesNames[mode];
@@ -139,7 +157,7 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        this.rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
     }
 
     public String getDiatonicKey()
@@ -158,7 +176,7 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        this.rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
     }
 
     public String NextInKey()
@@ -200,7 +218,7 @@ public class NoteMapDiatonic extends NoteMap
 
     private void SetRootKey()
     {
-        this.rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
     }
 
     @Override
@@ -238,6 +256,25 @@ public class NoteMapDiatonic extends NoteMap
         int tmpMode = Math.min(ModernModes.length - 1, this.mode + 1);
         return ModernModesNames[tmpMode];
     }
+
+    public void onMidiDiatonic(final ShortMidiMessage msg)
+    {
+        switch (msg.getData1())
+        {
+           case LaunchpadConstants.BUTTON_LEFT:
+              m_settingScale.set(PreviousMode());
+              break;
+
+           case LaunchpadConstants.BUTTON_RIGHT:
+              m_settingScale.set(NextMode());
+              break;
+
+           case LaunchpadConstants.BUTTON_SESSION:
+              m_settingRoot.set(NextInKey());
+              break;
+        }
+    }
+
 
     @Override
     public String toString()

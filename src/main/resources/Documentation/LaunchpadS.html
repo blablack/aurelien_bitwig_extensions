@@ -1,0 +1,209 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Bitwig Studio controller documentation</title>
+    <style type="text/css">
+        BODY {
+            background-color: white;
+            color: black;
+            margin: 0;
+            padding: 0;
+            float: none;
+            font: 12pt "Source Sans Pro", sans-serif;
+        }
+
+        DIV.world {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        DIV.header {
+            background-color: #1c1c1c;
+            color: #f6f6f6;
+            height: 50px;
+            position: relative;
+            top: 0;
+            left: 0;
+            width: 100%;
+            float: none;
+        }
+
+        DIV.title {
+            position: absolute;
+            left: 220px;
+            width: 400px;
+            bottom: 12px;
+            font: 16pt "Source Sans Pro", sans-serif;
+        }
+
+        DIV.content {
+            padding: 20px;
+            margin-left: 200px;
+            color: black;
+            position: relative;
+            max-width: 100ch;
+        }
+
+        STRONG {
+            color: #00699d;
+        }
+
+        EM {
+            color: #009e61;
+        }
+
+        H1 {
+            margin: 20;
+            padding: 0;
+            position: relative;
+            font: 300 26pt 'Montserrat', sans-serif;
+        }
+
+        H2 {
+            color: #d66900;
+            margin-top: 40px;
+            margin-bottom: 10px;
+            font: bold 16pt "Source Sans Pro", sans-serif;
+        }
+
+        H3 {
+            color: #b95900;
+        }
+
+        H4 {
+            color: #9f4d00;
+        }
+
+        P {
+            color: black;
+        }
+
+        UL {
+            text-shadow: 0 0;
+            padding-left: 18px;
+        }
+
+        LI {
+            display: list-item;
+            padding: 4pt;
+        }
+
+        TABLE {
+            border-collapse: collapse
+        }
+
+        TD,
+        TH {
+            padding: 5pt;
+            border-bottom: 1px solid grey;
+        }
+
+        TR:hover {
+            background-color: #f7f7f7;
+        }
+
+        TR:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        TH {
+            background-color: #d66900;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="world">
+        <div class="header">
+            <div class="title">Controller documentation</div>
+        </div>
+        <div class="content">
+
+            <h1 id="launchpad-s">Launchpad S</h1>
+            <p>
+                The <em>mixer button</em> (top right) rotates the different <strong>modes</strong> available.
+            </p>
+
+            <h2 id="modes">Modes</h2>
+            <p>
+                The 4 different modes available are:
+            <ul>
+                <li>Piano</li>
+                <li>Diatonic</li>
+                <li>Drums</li>
+                <li>Clip</li>
+            </ul>
+            </p>
+
+            <h1 id="keys">Piano-Diatonic-Drums</h1>
+
+            <p>
+                This enables the Launchpad S to play instruments with different keys layout.
+                These 3 modes have a few things in common:
+            <ul>
+                <li>The <em>up</em> and <em>down</em> buttons change the <strong>octave</strong></li>
+                <li>All the <em>right</em> buttons change the <strong>velocity</strong></li>
+            </ul>
+            </p>
+
+
+            <h2 id="keys-pianos">Piano</h2>
+            <p>
+                The Piano mode provides 4 octaves layed out like a piano keyboard.
+            </p>
+
+            <h2 id="keys-pianos">Diatonic</h2>
+            <p>
+                The Diatonic mode changes the layout of the keys based on the following 7 diatonic modes:
+            <ul>
+                <li>Ionian</li>
+                <li>Dorian</li>
+                <li>Phrygian</li>
+                <li>Lydian</li>
+                <li>Mixolydian</li>
+                <li>Aeolian</li>
+                <li>Locrian</li>
+            </ul>
+            </p>
+
+            <p>
+                The <em>left</em> and <em>right</em> buttons changes the <strong>diatonic mode</strong>.
+                The <em>session</em> button rotates the base <strong>root</strong>.
+            </p>
+
+            <h2 id="keys-pianos">Drums</h2>
+            <p>
+                The Drum mode provides a layout compatible with the <strong>Drum Machine</strong> container in Bitwig.
+            </p>
+
+            <h1 id="clips">Clips</h1>
+            <p>
+                This mode controls the <strong>clip launcher</strong> in Bitwig.
+            </p>
+
+            <p>
+                The <em>up</em>, <em>down</em>, <em>left</em> and <em>right</em> buttons help to navigate through the
+                the <strong>clips</strong>.
+            </p>
+            <p>
+                Each <em>pads</em> can launch or relaunch the corresponding <strong>clip</strong>.
+            </p>
+            <p>
+                The <em>right</em> buttons stop the corresponding <strong>clip</strong>.
+            </p>
+
+        </div>
+    </div>
+</body>
+
+</html>

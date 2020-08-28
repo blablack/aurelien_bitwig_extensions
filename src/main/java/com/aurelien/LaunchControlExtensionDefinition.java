@@ -77,12 +77,14 @@ public class LaunchControlExtensionDefinition extends ControllerExtensionDefinit
          list.add(new String[]
          {"Launch Control MIDI 1"}, new String[]
          {"Launch Control MIDI 1"});
-      } else if (platformType == PlatformType.MAC)
+      }
+      else if (platformType == PlatformType.MAC)
       {
          list.add(new String[]
          {"Launch Control MIDI 1"}, new String[]
          {"Launch Control MIDI 1"});
-      } else if (platformType == PlatformType.LINUX)
+      }
+      else if (platformType == PlatformType.LINUX)
       {
          list.add(new String[]
          {"Launch Control MIDI 1"}, new String[]

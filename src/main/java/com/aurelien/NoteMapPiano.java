@@ -1,7 +1,7 @@
 package com.aurelien;
 
-import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.MidiOut;
+import com.bitwig.extension.controller.api.SettableRangedValue;
 
 public class NoteMapPiano extends NoteMap
 {
@@ -10,9 +10,9 @@ public class NoteMapPiano extends NoteMap
     final private NovationColor off;
     final private NovationColor on;
 
-    public NoteMapPiano(ControllerHost host, MidiOut midiOutPort)
+    public NoteMapPiano(MidiOut midiOutPort, SettableRangedValue settingVelocity)
     {
-        super(host, midiOutPort);
+        super(midiOutPort, settingVelocity);
 
         white = NovationColor.AMBER_LOW;
         black = NovationColor.RED_LOW;
@@ -116,7 +116,7 @@ public class NoteMapPiano extends NoteMap
         if (!white && no_k)
             return -1;
 
-        int key = this.rootKey + octave * 12 + xx;
+        int key = this.m_rootKey + octave * 12 + xx;
 
         if (!white)
             key -= 1;
@@ -144,25 +144,25 @@ public class NoteMapPiano extends NoteMap
     @Override
     public Boolean canScrollUp()
     {
-        return this.rootKey < 72;
+        return this.m_rootKey < 72;
     }
 
     @Override
     public void ScrollUp()
     {
-        this.rootKey = Math.min(this.rootKey + 12, 72);
+        this.m_rootKey = Math.min(this.m_rootKey + 12, 72);
     }
 
     @Override
     public Boolean canScrollDown()
     {
-        return this.rootKey > 0;
+        return this.m_rootKey > 0;
     }
 
     @Override
     public void ScrollDown()
     {
-        this.rootKey = Math.max(this.rootKey - 12, 0);
+        this.m_rootKey = Math.max(this.m_rootKey - 12, 0);
     }
 
     @Override

@@ -81,17 +81,25 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
          list.add(new String[]
          {"Launchpad S MIDI 1"}, new String[]
          {"Launchpad S MIDI 1"});
-      } else if (platformType == PlatformType.MAC)
-      {
-         list.add(new String[]
-         {"Launchpad S MIDI 1"}, new String[]
-         {"Launchpad S MIDI 1"});
-      } else if (platformType == PlatformType.LINUX)
+      }
+      else if (platformType == PlatformType.MAC)
       {
          list.add(new String[]
          {"Launchpad S MIDI 1"}, new String[]
          {"Launchpad S MIDI 1"});
       }
+      else if (platformType == PlatformType.LINUX)
+      {
+         list.add(new String[]
+         {"Launchpad S MIDI 1"}, new String[]
+         {"Launchpad S MIDI 1"});
+      }
+   }
+
+   @Override
+   public String getHelpFilePath()
+   {
+      return "LaunchpadS.html";
    }
 
    @Override
