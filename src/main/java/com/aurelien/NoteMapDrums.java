@@ -37,10 +37,11 @@ public class NoteMapDrums extends NoteMap
     }
 
     @Override
-    public void TurnOnNote(int Note)
+    public void TurnOnNote(final int Note)
     {
-        int x = ((this.m_rootKey - Note) % 4) * -2;
-        int y = ((this.m_rootKey - Note) / 4 + 3) * 2;
+        int p_note = (Note - 4) % 16;
+        int x = (p_note % 4) * 2;
+        int y = (p_note / 4 - 3) * -2;
 
         setCellLED(x, y, on);
         setCellLED(x + 1, y, on);
@@ -49,10 +50,11 @@ public class NoteMapDrums extends NoteMap
     }
 
     @Override
-    public void TurnOffNote(int Note)
+    public void TurnOffNote(final int Note)
     {
-        int x = ((this.m_rootKey - Note) % 4) * -1;
-        int y = ((this.m_rootKey - Note) / 4 + 3);
+        int p_note = (Note - 4) % 16;
+        int x = (p_note % 4);
+        int y = (p_note / 4 - 3) * -1;
 
         var cell_is_even = ((x + y) & 1) == 0;
         NovationColor colour = cell_is_even ? even : odd;
