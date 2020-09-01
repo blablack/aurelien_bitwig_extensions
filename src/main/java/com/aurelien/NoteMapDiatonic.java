@@ -29,7 +29,7 @@ public class NoteMapDiatonic extends NoteMap
 
     private int mode;
     protected int diatonicRootKey;
-    private int diatonicOctave;
+    final private int DIATONICOCTAVE;
 
     private SettableEnumValue m_settingRoot;
     private SettableEnumValue m_settingScale;
@@ -46,9 +46,9 @@ public class NoteMapDiatonic extends NoteMap
         m_settingRoot = settingRoot;
         mode = 0;
         diatonicRootKey = 0;
-        diatonicOctave = -2;
+        DIATONICOCTAVE = -2;
 
-        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        SetRootKey();
 
         white = NovationColor.AMBER_LOW;
         black = NovationColor.RED_LOW;
@@ -157,7 +157,7 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        SetRootKey();
     }
 
     public String getDiatonicKey()
@@ -176,9 +176,9 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        SetRootKey();
     }
-
+/*
     public String NextInKey()
     {
         int p_tmpDiatonicKey = this.diatonicRootKey;
@@ -188,37 +188,39 @@ public class NoteMapDiatonic extends NoteMap
             p_tmpDiatonicKey = 0;
 
         return DiatonicKeys[p_tmpDiatonicKey];
-    }
+    }*/
 
     @Override
     public Boolean canScrollUp()
     {
-        return diatonicOctave < 0;
+        return this.diatonicRootKey < 11;
     }
 
     @Override
     public void ScrollUp()
     {
-        diatonicOctave++;
+        diatonicRootKey++;
+        m_settingRoot.set(DiatonicKeys[diatonicRootKey]);
         SetRootKey();
     }
 
     @Override
     public Boolean canScrollDown()
     {
-        return this.diatonicOctave > -3;
+        return this.diatonicRootKey > 0;
     }
 
     @Override
     public void ScrollDown()
     {
-        diatonicOctave--;
+        diatonicRootKey--;
+        m_settingRoot.set(DiatonicKeys[diatonicRootKey]);
         SetRootKey();
     }
 
     private void SetRootKey()
     {
-        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * diatonicOctave;
+        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * DIATONICOCTAVE;
     }
 
     @Override
@@ -267,10 +269,6 @@ public class NoteMapDiatonic extends NoteMap
 
            case LaunchpadConstants.BUTTON_RIGHT:
               m_settingScale.set(NextMode());
-              break;
-
-           case LaunchpadConstants.BUTTON_SESSION:
-              m_settingRoot.set(NextInKey());
               break;
         }
     }

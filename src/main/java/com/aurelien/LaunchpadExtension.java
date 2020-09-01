@@ -94,7 +94,7 @@ public class LaunchpadExtension extends ControllerExtension
       });
       p_settingVelocity.subscribe();
 
-      SettableEnumValue  p_settingScale = documentState.getEnumSetting("Mode", "Diatonic", NoteMapDiatonic.GetAllModes(), NoteMapDiatonic.GetAllModes()[DEFAULT_SCALE]);
+      SettableEnumValue p_settingScale = documentState.getEnumSetting("Mode", "Diatonic", NoteMapDiatonic.GetAllModes(), NoteMapDiatonic.GetAllModes()[DEFAULT_SCALE]);
       p_settingScale.addValueObserver(value -> {
          ChangeDiatonicMode(value);
       });
@@ -128,10 +128,6 @@ public class LaunchpadExtension extends ControllerExtension
             {
                m_settingMode.set(MODE[NextInSetting(MODE, m_settingMode.get())]);
             }
-            else if (m_activeMode == 1)
-            {
-               ((NoteMapDiatonic) m_noteMaps[m_activeMode]).onMidiDiatonic(msg);
-            }
             else if (m_activeMode != 3)
             {
                switch (msg.getData1())
@@ -151,6 +147,11 @@ public class LaunchpadExtension extends ControllerExtension
                         updateNoteTranslationTable(m_noteMaps[m_activeMode]);
                      }
                      break;
+                  default:
+                     if (m_activeMode == 1)
+                     {
+                        ((NoteMapDiatonic) m_noteMaps[m_activeMode]).onMidiDiatonic(msg);
+                     }
                }
             }
             else
@@ -261,11 +262,11 @@ public class LaunchpadExtension extends ControllerExtension
       p_leftButton.SetColor(m_hardwareSurface, () -> {
          if (m_activeMode != 3)
          {
-            return m_noteMaps[m_activeMode].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.OFF;
+            return m_activeMode == 1 ? m_noteMaps[m_activeMode].canScrollLeft() ? NovationColor.GREEN_FULL : NovationColor.GREEN_LOW : NovationColor.OFF;
          }
          else
          {
-            return m_grid.canScrollLeft() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollLeft() ? NovationColor.RED_FULL : NovationColor.RED_LOW;
          }
       }, m_midiOutPort);
 
@@ -273,11 +274,11 @@ public class LaunchpadExtension extends ControllerExtension
       p_rightButton.SetColor(m_hardwareSurface, () -> {
          if (m_activeMode != 3)
          {
-            return m_noteMaps[m_activeMode].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.OFF;
+            return m_activeMode == 1 ? m_noteMaps[m_activeMode].canScrollRight() ? NovationColor.GREEN_FULL : NovationColor.GREEN_LOW : NovationColor.OFF;
          }
          else
          {
-            return m_grid.canScrollRight() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollRight() ? NovationColor.RED_FULL : NovationColor.RED_LOW;
          }
       }, m_midiOutPort);
 
@@ -285,11 +286,11 @@ public class LaunchpadExtension extends ControllerExtension
       p_upButton.SetColor(m_hardwareSurface, () -> {
          if (m_activeMode != 3)
          {
-            return m_noteMaps[m_activeMode].canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_noteMaps[m_activeMode].canScrollUp() ? m_activeMode == 1 ? NovationColor.GREEN_FULL : NovationColor.RED_FULL : m_activeMode == 1 ? NovationColor.GREEN_LOW : NovationColor.RED_LOW;
          }
          else
          {
-            return m_grid.canScrollUp() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollUp() ? NovationColor.RED_FULL : NovationColor.RED_LOW;
          }
       }, m_midiOutPort);
 
@@ -297,25 +298,21 @@ public class LaunchpadExtension extends ControllerExtension
       p_downButton.SetColor(m_hardwareSurface, () -> {
          if (m_activeMode != 3)
          {
-            return m_noteMaps[m_activeMode].canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_noteMaps[m_activeMode].canScrollDown() ? m_activeMode == 1 ? NovationColor.GREEN_FULL : NovationColor.RED_FULL : m_activeMode == 1 ? NovationColor.GREEN_LOW : NovationColor.RED_LOW;
          }
          else
          {
-            return m_grid.canScrollDown() ? NovationColor.RED_FULL : NovationColor.OFF;
+            return m_grid.canScrollDown() ? NovationColor.RED_FULL : NovationColor.RED_LOW;
          }
       }, m_midiOutPort);
 
-      final NovationButton p_sessionButton = new NovationButton(m_hardwareSurface, "SESSION_BUTTON", NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP, 0, LaunchpadConstants.BUTTON_SESSION);
-      p_sessionButton.SetColor(m_hardwareSurface, () -> {
-         if (m_activeMode == 1)
-         {
-            return NovationColor.LIME;
-         }
-         else
-         {
-            return NovationColor.OFF;
-         }
-      }, m_midiOutPort);
+      /*
+       * final NovationButton p_sessionButton = new NovationButton(m_hardwareSurface, "SESSION_BUTTON",
+       * NovationButton.NovationButtonType.OFF, midiInPort, LaunchpadConstants.CHANNEL_ROOT_BUTTONS_TOP,
+       * 0, LaunchpadConstants.BUTTON_SESSION); p_sessionButton.SetColor(m_hardwareSurface, () -> { if
+       * (m_activeMode == 1) { return NovationColor.LIME; } else { return NovationColor.OFF; } },
+       * m_midiOutPort);
+       */
    }
 
    private void ChangeSettingMode(final String Value)

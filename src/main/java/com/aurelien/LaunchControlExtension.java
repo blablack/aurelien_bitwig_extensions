@@ -211,16 +211,16 @@ public class LaunchControlExtension extends ControllerExtension
         p_appl.panelLayout().markInterested();
 
         final NovationButton upButton = new NovationButton(hardwareSurface, "PREVIOUS_TRACK_BUTTON_UP", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_UP);
-        upButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("ARRANGE") && trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        upButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("ARRANGE") ? trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW: NovationColor.OFF, midiOutPort);
 
         final NovationButton downButton = new NovationButton(hardwareSurface, "NEXT_TRACK_BUTTON_DOWN", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_DOWN);
-        downButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("ARRANGE") && trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        downButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("ARRANGE") ? trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW: NovationColor.OFF, midiOutPort);
 
         final NovationButton leftButton = new NovationButton(hardwareSurface, "PREVIOUS_TRACK_BUTTON_LEFT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_LEFT);
-        leftButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("MIX") && trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        leftButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("MIX") ? trackBank.canScrollBackwards().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW: NovationColor.OFF, midiOutPort);
 
         final NovationButton rightButton = new NovationButton(hardwareSurface, "NEXT_TRACK_BUTTON_RIGHT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_RIGHT);
-        rightButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("MIX") && trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        rightButton.SetColor(hardwareSurface, () -> p_appl.panelLayout().get().equals("MIX") ? trackBank.canScrollForwards().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW: NovationColor.OFF, midiOutPort);
 
         p_appl.panelLayout().addValueObserver(value -> {
             switch (value)
@@ -258,12 +258,12 @@ public class LaunchControlExtension extends ControllerExtension
         cursorTrack.hasPrevious().markInterested();
         final NovationButton upDeviceButton = new NovationButton(hardwareSurface, "DEVICE_PREVIOUS_TRACK_BUTTON_UP", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_UP);
         upDeviceButton.SetBinding(cursorTrack.selectPreviousAction());
-        upDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        upDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW, midiOutPort);
 
         cursorTrack.hasNext().markInterested();
         final NovationButton downDeviceButton = new NovationButton(hardwareSurface, "DEVICE_NEXT_TRACK_BUTTON_DOWN", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_DOWN);
         downDeviceButton.SetBinding(cursorTrack.selectNextAction());
-        downDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasNext().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        downDeviceButton.SetColor(hardwareSurface, () -> cursorTrack.hasNext().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW, midiOutPort);
 
         DeviceBank p_deviceBank = cursorTrack.createDeviceBank(2);
         PinnableCursorDevice p_cursor = cursorTrack.createCursorDevice("CURSOR_DEVICE", "Cursor Device", 0, CursorDeviceFollowMode.FOLLOW_SELECTION);
@@ -272,12 +272,12 @@ public class LaunchControlExtension extends ControllerExtension
         p_cursor.hasPrevious().markInterested();
         final NovationButton leftButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_LEFT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_LEFT);
         leftButton.SetBinding(p_cursor.selectPreviousAction());
-        leftButton.SetColor(hardwareSurface, () -> p_cursor.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        leftButton.SetColor(hardwareSurface, () -> p_cursor.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW, midiOutPort);
 
         p_cursor.hasNext().markInterested();
         final NovationButton rightButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_RIGHT", NovationButton.NovationButtonType.CC, midiInPort, CHANNEL_ROOT_BUTTONS_ARROW, p_channel, BUTTON_RIGHT);
         rightButton.SetBinding(p_cursor.selectNextAction());
-        rightButton.SetColor(hardwareSurface, () -> p_cursor.hasNext().get() ? NovationColor.RED_FULL : NovationColor.OFF, midiOutPort);
+        rightButton.SetColor(hardwareSurface, () -> p_cursor.hasNext().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW, midiOutPort);
 
         for (int i = 0; i < p_deviceBank.getSizeOfBank(); i++)
         {
@@ -330,12 +330,12 @@ public class LaunchControlExtension extends ControllerExtension
             remoteControlsBank.hasPrevious().markInterested();
             final NovationButton upButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_REMOTE_UP_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_3 + p_buttonShift);
             upButton.SetBinding(remoteControlsBank.selectPreviousAction());
-            upButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasPrevious().get() ? NovationColor.RED_LOW : NovationColor.OFF : NovationColor.OFF, midiOutPort);
+            upButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasPrevious().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW : NovationColor.OFF, midiOutPort);
 
             remoteControlsBank.hasNext().markInterested();
             final NovationButton downButton = new NovationButton(hardwareSurface, "DEVICE_BUTTON_REMOTE_DOWN_" + i, NovationButton.NovationButtonType.NoteOn, midiInPort, CHANNEL_ROOT_BUTTONS_NUMBER, p_channel, BUTTON_4 + p_buttonShift);
             downButton.SetBinding(remoteControlsBank.selectNextAction());
-            downButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasNext().get() ? NovationColor.RED_LOW : NovationColor.OFF : NovationColor.OFF, midiOutPort);
+            downButton.SetColor(hardwareSurface, () -> p_oneDevice.exists().get() ? remoteControlsBank.hasNext().get() ? NovationColor.RED_FULL : NovationColor.RED_LOW : NovationColor.OFF, midiOutPort);
         }
     }
 
