@@ -5,6 +5,7 @@ import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.Application;
+import com.bitwig.extension.controller.api.NoteInput;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.Parameter;
@@ -94,6 +95,7 @@ public class LaunchControlExtension extends ControllerExtension
         });
 
         final MidiIn midiInPort = host.getMidiInPort(0);
+        CreateNoteInput(midiInPort).setShouldConsumeEvents(true);
         final Transport transport = host.createTransport();
 
         hardwareSurface = host.createHardwareSurface();
@@ -395,6 +397,11 @@ public class LaunchControlExtension extends ControllerExtension
             midiOutPort.sendMidi(CHANNEL_ROOT_BUTTONS_ARROW + i, BUTTON_RIGHT, p_off.Code());
         }
     }
+
+    private NoteInput CreateNoteInput(final MidiIn midiInPort)
+   {
+      return midiInPort.createNoteInput("Launch Control", "B0????", "B1????", "B2????", "B3????", "B4????", "B5????", "B6????", "B7????");
+   }
 
     @Override
     public void exit()
