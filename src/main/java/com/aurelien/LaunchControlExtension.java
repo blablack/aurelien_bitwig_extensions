@@ -206,8 +206,8 @@ public class LaunchControlExtension extends ControllerExtension
         trackBank.followCursorTrack(cursorTrack);
         trackBank.canScrollBackwards().markInterested();
         trackBank.canScrollForwards().markInterested();
-        final HardwareActionBindable scrollPageBackwardsAction = trackBank.scrollPageBackwardsAction();
-        final HardwareActionBindable scrollPageForwardsAction = trackBank.scrollPageForwardsAction();
+        final HardwareActionBindable scrollPageBackwardsAction = trackBank.scrollBackwardsAction();
+        final HardwareActionBindable scrollPageForwardsAction = trackBank.scrollForwardsAction();
 
         final Application p_appl = host.createApplication();
         p_appl.panelLayout().markInterested();
