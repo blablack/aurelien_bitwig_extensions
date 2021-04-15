@@ -54,7 +54,7 @@ public class LaunchControlExtensionDefinition extends ControllerExtensionDefinit
    @Override
    public int getRequiredAPIVersion()
    {
-      return 12;
+      return 13;
    }
 
    @Override

@@ -6,7 +6,7 @@
 	<artifactId>aureliencontrollers</artifactId>
 	<packaging>jar</packaging>
 	<name>AurelienControllers</name>
-	<version>0.2</version>
+	<version>0.3</version>
 	
 	<repositories>
        <repository>
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>com.bitwig</groupId>
 			<artifactId>extension-api</artifactId>
-			<version>12</version>
+			<version>13</version>
 		</dependency>
 	</dependencies>
 
