@@ -1,41 +1,35 @@
-package com.aurelien;
+package com.aurelien.launchpad.notemap;
 
+import com.aurelien.basic.NovationColor;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.SettableRangedValue;
 
-public class NoteMapPiano extends NoteMap
+public class NoteMapPiano extends NoteMapCommon implements INoteMap
 {
-    final private NovationColor white;
-    final private NovationColor black;
-    final private NovationColor off;
-    final private NovationColor on;
+    private static final NovationColor WHITE = NovationColor.AMBER_LOW;
+    private static final NovationColor BLACK = NovationColor.RED_LOW;
+    private static final NovationColor OFF = NovationColor.OFF;
+    private static final NovationColor ON = NovationColor.GREEN_FULL;
 
     public NoteMapPiano(MidiOut midiOutPort, SettableRangedValue settingVelocity)
     {
         super(midiOutPort, settingVelocity);
-
-        white = NovationColor.AMBER_LOW;
-        black = NovationColor.RED_LOW;
-        off = NovationColor.OFF;
-        on = NovationColor.GREEN_FULL;
     }
 
-    @Override
-    public void DrawKeys()
+    public void drawKeys()
     {
         for (int y = 0; y < 8; y++)
         {
             for (int x = 0; x < 8; x++)
             {
                 int key = cellToKey(x, y);
-                NovationColor colour = (key != -1) ? (this.isKeyBlack(key) ? black : white) : off;
+                NovationColor colour = (key != -1) ? (this.isKeyBlack(key) ? BLACK : WHITE) : OFF;
                 setCellLED(x, y, colour);
             }
         }
     }
 
-    @Override
-    public void TurnOnNote(int Note)
+    public void turnOnNote(int Note)
     {
         for (int y = 0; y < 8; y++)
         {
@@ -43,14 +37,13 @@ public class NoteMapPiano extends NoteMap
             {
                 if (Note == this.cellToKey(x, y))
                 {
-                    setCellLED(x, y, on);
+                    setCellLED(x, y, ON);
                 }
             }
         }
     }
 
-    @Override
-    public void TurnOffNote(int Note)
+    public void turnOffNote(int Note)
     {
         for (int y = 0; y < 8; y++)
         {
@@ -59,19 +52,18 @@ public class NoteMapPiano extends NoteMap
                 int key = this.cellToKey(x, y);
                 if (Note == key)
                 {
-                    setCellLED(x, y, this.isKeyBlack(key) ? black : white);
+                    setCellLED(x, y, this.isKeyBlack(key) ? BLACK : WHITE);
                 }
             }
         }
     }
 
-    @Override
     public int cellToKey(int x, int y)
     {
         int octave = (int) (3 - Math.floor(y / 2));
 
         int xx = 0;
-        Boolean no_k = false;
+        boolean no_k = false;
 
         switch (x)
         {
@@ -111,12 +103,12 @@ public class NoteMapPiano extends NoteMap
                 break;
         }
 
-        Boolean white = (y & 1) != 0;
+        boolean white = (y & 1) != 0;
 
         if (!white && no_k)
             return -1;
 
-        int key = this.m_rootKey + octave * 12 + xx;
+        int key = this.rootKey + octave * 12 + xx;
 
         if (!white)
             key -= 1;
@@ -124,45 +116,51 @@ public class NoteMapPiano extends NoteMap
         return key;
     }
 
-    public Boolean isKeyBlack(int key)
+    public boolean isKeyBlack(int key)
     {
         int k = key % 12;
 
-        switch (k)
-        {
-            case 1:
-            case 3:
-            case 6:
-            case 8:
-            case 10:
-                return true;
-        }
+        return k == 1 || k == 3 || k == 6 || k == 8 || k == 10;
+    }
 
+    public boolean canScrollUp()
+    {
+        return this.rootKey < 72;
+    }
+
+    public void scrollUp()
+    {
+        this.rootKey = Math.min(this.rootKey + 12, 72);
+    }
+
+    public boolean canScrollDown()
+    {
+        return this.rootKey > 0;
+    }
+
+    public void scrollDown()
+    {
+        this.rootKey = Math.max(this.rootKey - 12, 0);
+    }
+
+    public boolean canScrollLeft()
+    {
         return false;
     }
 
-    @Override
-    public Boolean canScrollUp()
+    public void scrollLeft() throws CannotScrollException
     {
-        return this.m_rootKey < 72;
+        throw new CannotScrollException(this.toString() + " - cannot scroll left");
     }
 
-    @Override
-    public void ScrollUp()
+    public boolean canScrollRight()
     {
-        this.m_rootKey = Math.min(this.m_rootKey + 12, 72);
+        return false;
     }
 
-    @Override
-    public Boolean canScrollDown()
+    public void scrollRight() throws CannotScrollException
     {
-        return this.m_rootKey > 0;
-    }
-
-    @Override
-    public void ScrollDown()
-    {
-        this.m_rootKey = Math.max(this.m_rootKey - 12, 0);
+        throw new CannotScrollException(this.toString() + " - cannot scroll right");
     }
 
     @Override

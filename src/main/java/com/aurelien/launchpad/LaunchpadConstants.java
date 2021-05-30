@@ -1,6 +1,6 @@
-package com.aurelien;
+package com.aurelien.launchpad;
 
-public class LaunchpadConstants
+public final class LaunchpadConstants
 {
     public static final int BUTTON_UP = 104;
     public static final int BUTTON_DOWN = 105;
@@ -26,4 +26,9 @@ public class LaunchpadConstants
     public static final int CHANNEL_ROOT_BUTTONS_TOP = 176;
 
     public static final int CHANNEL = 0;
+
+    private LaunchpadConstants()
+    {
+        
+    }
 }

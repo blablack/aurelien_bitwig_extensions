@@ -1,14 +1,17 @@
-package com.aurelien;
+package com.aurelien.launchpad.notemap;
 
+import static com.aurelien.launchpad.LaunchpadConstants.*;
+
+import com.aurelien.basic.NovationColor;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.SettableEnumValue;
 
-public class NoteMapDiatonic extends NoteMap
+public class NoteMapDiatonic extends NoteMapCommon implements INoteMap
 {
-    final private Integer[][] ModernModes =
+    private static final Integer[][] ModernModes =
     {
             {0, 2, 4, 5, 7, 9, 11, 12}, // Ionian
             {0, 2, 3, 5, 7, 9, 10, 12}, // Dorian
@@ -19,45 +22,39 @@ public class NoteMapDiatonic extends NoteMap
             {0, 1, 3, 5, 6, 8, 10, 12} // Locrian
     };
 
-    final static private String[] ModernModesNames =
+    private static final String[] ModernModesNames =
     {"Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"};
 
-    final static private String[] DiatonicKeys =
+    private static final String[] DiatonicKeys =
     {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
-    final private int defaultRoot = 36; // Default C
+    private static final int DEFAULTROOT = 36; // Default C
 
     private int mode;
     protected int diatonicRootKey;
-    final private int DIATONICOCTAVE;
+    private static final int DIATONICOCTAVE = -2;
 
-    private SettableEnumValue m_settingRoot;
-    private SettableEnumValue m_settingScale;
+    private final SettableEnumValue settingRoot;
+    private final SettableEnumValue settingScale;
 
-    final private NovationColor white;
-    final private NovationColor black;
-    final private NovationColor off;
-    final private NovationColor on;
+    private static final NovationColor WHITE = NovationColor.AMBER_LOW;
+    private static final NovationColor BLACK = NovationColor.RED_LOW;
+    private static final NovationColor OFF = NovationColor.OFF;
+    private static final NovationColor ON = NovationColor.GREEN_FULL;
 
-    public NoteMapDiatonic(MidiOut midiOutPort, SettableRangedValue settingVelocity, SettableEnumValue settingScale, SettableEnumValue settingRoot)
+    public NoteMapDiatonic(MidiOut midiOutPort, SettableRangedValue settingVelocity, SettableEnumValue settingScale,
+            SettableEnumValue settingRoot)
     {
         super(midiOutPort, settingVelocity);
-        m_settingScale = settingScale;
-        m_settingRoot = settingRoot;
+        this.settingScale = settingScale;
+        this.settingRoot = settingRoot;
         mode = 0;
         diatonicRootKey = 0;
-        DIATONICOCTAVE = -2;
 
-        SetRootKey();
-
-        white = NovationColor.AMBER_LOW;
-        black = NovationColor.RED_LOW;
-        off = NovationColor.OFF;
-        on = NovationColor.GREEN_FULL;
+        setRootKey();
     }
 
-    @Override
-    public void DrawKeys()
+    public void drawKeys()
     {
         for (var y = 0; y < 8; y++)
         {
@@ -65,15 +62,22 @@ public class NoteMapDiatonic extends NoteMap
             {
                 int key = cellToKey(x, y);
 
-                NovationColor colour = (key != -1) ? (this.isKeyBlack(key) ? black : white) : off;
+                NovationColor colour;
+                if (key != -1)
+                {
+                    colour = this.isKeyBlack(key) ? BLACK : WHITE;
+                }
+                else
+                {
+                    colour = OFF;
+                }
 
                 setCellLED(x, y, colour);
             }
         }
     }
 
-    @Override
-    public void TurnOnNote(int Note)
+    public void turnOnNote(int Note)
     {
         for (var y = 0; y < 8; y++)
         {
@@ -81,14 +85,13 @@ public class NoteMapDiatonic extends NoteMap
             {
                 if (Note == this.cellToKey(x, y))
                 {
-                    setCellLED(x, y, on);
+                    setCellLED(x, y, ON);
                 }
             }
         }
     }
 
-    @Override
-    public void TurnOffNote(int Note)
+    public void turnOffNote(int Note)
     {
         for (var y = 0; y < 8; y++)
         {
@@ -97,7 +100,7 @@ public class NoteMapDiatonic extends NoteMap
                 var key = this.cellToKey(x, y);
                 if (Note == key)
                 {
-                    setCellLED(x, y, this.isKeyBlack(key) ? black : white);
+                    setCellLED(x, y, this.isKeyBlack(key) ? BLACK : WHITE);
                 }
             }
         }
@@ -106,7 +109,7 @@ public class NoteMapDiatonic extends NoteMap
     public int cellToKey(int x, int y)
     {
         var octave = 7 - y;
-        var key = this.m_rootKey + octave * 12 + ModernModes[this.mode][x];
+        var key = this.rootKey + octave * 12 + ModernModes[this.mode][x];
 
         if (key >= 0 && key < 128)
             return key;
@@ -114,29 +117,19 @@ public class NoteMapDiatonic extends NoteMap
         return -1;
     }
 
-    public Boolean isKeyBlack(int key)
+    public boolean isKeyBlack(int key)
     {
         var k = key % 12;
 
-        switch (k)
-        {
-            case 1:
-            case 3:
-            case 6:
-            case 8:
-            case 10:
-                return true;
-        }
-
-        return false;
+        return (k == 1 || k == 3 || k == 6 || k == 8 || k == 10);
     }
 
-    public static String[] GetAllModes()
+    public static String[] getAllModes()
     {
         return ModernModesNames;
     }
 
-    public static String[] GetAllRoot()
+    public static String[] getAllRoot()
     {
         return DiatonicKeys;
     }
@@ -146,7 +139,7 @@ public class NoteMapDiatonic extends NoteMap
         return ModernModesNames[mode];
     }
 
-    public void SetMode(final String Mode)
+    public void setMode(final String Mode)
     {
         for (int i = 0; i < 7; i++)
         {
@@ -157,7 +150,7 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        SetRootKey();
+        setRootKey();
     }
 
     public String getDiatonicKey()
@@ -165,7 +158,7 @@ public class NoteMapDiatonic extends NoteMap
         return DiatonicKeys[this.diatonicRootKey];
     }
 
-    public void SetDiatonicKey(final String Key)
+    public void setDiatonicKey(final String Key)
     {
         for (int i = 0; i < 12; i++)
         {
@@ -176,84 +169,65 @@ public class NoteMapDiatonic extends NoteMap
             }
         }
 
-        SetRootKey();
+        setRootKey();
     }
-/*
-    public String NextInKey()
-    {
-        int p_tmpDiatonicKey = this.diatonicRootKey;
-        if (p_tmpDiatonicKey < 11)
-            p_tmpDiatonicKey++;
-        else
-            p_tmpDiatonicKey = 0;
 
-        return DiatonicKeys[p_tmpDiatonicKey];
-    }*/
-
-    @Override
-    public Boolean canScrollUp()
+    public boolean canScrollUp()
     {
         return this.diatonicRootKey < 11;
     }
 
-    @Override
-    public void ScrollUp()
+    public void scrollUp()
     {
         diatonicRootKey++;
-        m_settingRoot.set(DiatonicKeys[diatonicRootKey]);
-        SetRootKey();
+        settingRoot.set(DiatonicKeys[diatonicRootKey]);
+        setRootKey();
     }
 
-    @Override
-    public Boolean canScrollDown()
+    public boolean canScrollDown()
     {
         return this.diatonicRootKey > 0;
     }
 
-    @Override
-    public void ScrollDown()
+    public void scrollDown()
     {
         diatonicRootKey--;
-        m_settingRoot.set(DiatonicKeys[diatonicRootKey]);
-        SetRootKey();
+        settingRoot.set(DiatonicKeys[diatonicRootKey]);
+        setRootKey();
     }
 
-    private void SetRootKey()
+    private void setRootKey()
     {
-        this.m_rootKey = defaultRoot + diatonicRootKey + 12 * DIATONICOCTAVE;
+        this.rootKey = DEFAULTROOT + diatonicRootKey + 12 * DIATONICOCTAVE;
     }
 
-    @Override
-    public Boolean canScrollLeft()
+    public boolean canScrollLeft()
     {
         return this.mode > 0;
     }
 
-    @Override
-    public void ScrollLeft()
+    public void scrollLeft()
     {
         this.mode = Math.max(0, this.mode - 1);
     }
 
-    public String PreviousMode()
+    public String previousMode()
     {
         int tmpMode = Math.max(0, this.mode - 1);
         return ModernModesNames[tmpMode];
     }
 
-    @Override
-    public Boolean canScrollRight()
+    public boolean canScrollRight()
     {
         return this.mode < ModernModes.length - 1;
     }
 
-    @Override
-    public void ScrollRight()
+    public void scrollRight()
     {
         this.mode = Math.min(ModernModes.length - 1, this.mode + 1);
     }
 
-    public String NextMode()
+    public String sextMode()
     {
         int tmpMode = Math.min(ModernModes.length - 1, this.mode + 1);
         return ModernModesNames[tmpMode];
@@ -263,13 +237,16 @@ public class NoteMapDiatonic extends NoteMap
     {
         switch (msg.getData1())
         {
-           case LaunchpadConstants.BUTTON_LEFT:
-              m_settingScale.set(PreviousMode());
-              break;
+            case BUTTON_LEFT:
+                settingScale.set(previousMode());
+                break;
 
-           case LaunchpadConstants.BUTTON_RIGHT:
-              m_settingScale.set(NextMode());
-              break;
+            case BUTTON_RIGHT:
+                settingScale.set(sextMode());
+                break;
+
+            default:
+                break;
         }
     }
 

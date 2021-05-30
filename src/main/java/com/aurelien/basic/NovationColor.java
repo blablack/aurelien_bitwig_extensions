@@ -1,10 +1,10 @@
-package com.aurelien;
+package com.aurelien.basic;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
 import com.bitwig.extension.controller.api.InternalHardwareLightState;
 
-final class NovationColor extends InternalHardwareLightState
+public final class NovationColor extends InternalHardwareLightState
 {
     public static final NovationColor OFF = new NovationColor(12);
     public static final NovationColor RED_LOW = new NovationColor(13);
@@ -23,11 +23,11 @@ final class NovationColor extends InternalHardwareLightState
     public static final NovationColor YELLOW_FLASHING = new NovationColor(58);
     public static final NovationColor GREEN_FLASHING = new NovationColor(56);
 
-    private final int m_colorCode;
+    private final int colorCode;
 
     public NovationColor(final int ColorCode)
     {
-        m_colorCode = ColorCode;
+        colorCode = ColorCode;
     }
 
     NovationColor(int Green, int Red, boolean Flashing)
@@ -36,7 +36,7 @@ final class NovationColor extends InternalHardwareLightState
         if (Flashing)
             p_flashing = 8;
 
-        m_colorCode = 16 * Green + Red + p_flashing;
+        colorCode = 16 * Green + Red + p_flashing;
     }
 
     @Override
@@ -51,16 +51,22 @@ final class NovationColor extends InternalHardwareLightState
         return obj instanceof NovationColor && equals((NovationColor) obj);
     }
 
+    @Override
+    public int hashCode()
+    {
+        return super.hashCode();
+    }
+
     public boolean equals(final NovationColor obj)
     {
         if (obj == this)
             return true;
 
-        return m_colorCode == obj.m_colorCode;
+        return colorCode == obj.colorCode;
     }
 
-    public int Code()
+    public int code()
     {
-        return m_colorCode;
+        return colorCode;
     }
 }

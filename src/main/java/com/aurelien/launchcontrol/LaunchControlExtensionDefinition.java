@@ -1,4 +1,4 @@
-package com.aurelien;
+package com.aurelien.launchcontrol;
 
 import java.util.UUID;
 
@@ -10,10 +10,6 @@ import com.bitwig.extension.controller.api.ControllerHost;
 public class LaunchControlExtensionDefinition extends ControllerExtensionDefinition
 {
    private static final UUID DRIVER_ID = UUID.fromString("aee088d2-8c6f-4604-b13d-14ecdcad01cd");
-
-   public LaunchControlExtensionDefinition()
-   {
-   }
 
    @Override
    public String getName()
@@ -69,27 +65,14 @@ public class LaunchControlExtensionDefinition extends ControllerExtensionDefinit
       return 1;
    }
 
+   public static final String MIDINAME = "Launch Control MIDI 1";
+
    @Override
    public void listAutoDetectionMidiPortNames(final AutoDetectionMidiPortNamesList list, final PlatformType platformType)
    {
-      if (platformType == PlatformType.WINDOWS)
-      {
-         list.add(new String[]
-         {"Launch Control MIDI 1"}, new String[]
-         {"Launch Control MIDI 1"});
-      }
-      else if (platformType == PlatformType.MAC)
-      {
-         list.add(new String[]
-         {"Launch Control MIDI 1"}, new String[]
-         {"Launch Control MIDI 1"});
-      }
-      else if (platformType == PlatformType.LINUX)
-      {
-         list.add(new String[]
-         {"Launch Control MIDI 1"}, new String[]
-         {"Launch Control MIDI 1"});
-      }
+      list.add(new String[]
+      {MIDINAME}, new String[]
+      {MIDINAME});
    }
 
    @Override

@@ -1,4 +1,4 @@
-package com.aurelien;
+package com.aurelien.launchpad;
 
 import java.util.UUID;
 
@@ -11,14 +11,13 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
 {
    private static final UUID DRIVER_ID = UUID.fromString("aee088d2-8c6f-4604-b13d-14ecdcad01ce");
 
-   public LaunchpadExtensionDefinition()
-   {
-   }
+   public static final String MIDINAME = "Launchpad S MIDI 1";
+   public static final String NAME = "Launchpad S";
 
    @Override
    public String getName()
    {
-      return "Launchpad S";
+      return NAME;
    }
 
    @Override
@@ -48,7 +47,7 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getHardwareModel()
    {
-      return "Launchpad S";
+      return NAME;
    }
 
    @Override
@@ -69,31 +68,18 @@ public class LaunchpadExtensionDefinition extends ControllerExtensionDefinition
       return 1;
    }
 
+   
+
    @Override
    public void listAutoDetectionMidiPortNames(final AutoDetectionMidiPortNamesList list, final PlatformType platformType)
    {
       list.add(new String[]
-      {"Launchpad S"}, new String[]
-      {"Launchpad S"});
+      {NAME}, new String[]
+      {NAME});
 
-      if (platformType == PlatformType.WINDOWS)
-      {
-         list.add(new String[]
-         {"Launchpad S MIDI 1"}, new String[]
-         {"Launchpad S MIDI 1"});
-      }
-      else if (platformType == PlatformType.MAC)
-      {
-         list.add(new String[]
-         {"Launchpad S MIDI 1"}, new String[]
-         {"Launchpad S MIDI 1"});
-      }
-      else if (platformType == PlatformType.LINUX)
-      {
-         list.add(new String[]
-         {"Launchpad S MIDI 1"}, new String[]
-         {"Launchpad S MIDI 1"});
-      }
+      list.add(new String[]
+      {MIDINAME}, new String[]
+      {MIDINAME});
    }
 
    @Override
